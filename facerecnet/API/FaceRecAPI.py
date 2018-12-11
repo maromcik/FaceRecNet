@@ -8,14 +8,14 @@ from queue import Queue
 from multiprocessing.pool import ThreadPool
 import pickle
 import socket
-import paramiko
-import openpyxl
+
 
 class FaceRecognition:
     def __init__(self, models_paths, dir, device, resize_factor):
+        self.device = device
+        self.cap = cv2.VideoCapture(self.device)
         self.models = models_paths
         self.dir = dir
-        self.device = device
 
         self.frameQ = Queue()
         self.outputQ = Queue()
@@ -49,6 +49,9 @@ class FaceRecognition:
         self.port2 = 13082
 
         self.ring = False
+
+    def __del__(self):
+        self.cap.release()
 
     def draw(self, img, rect):
         (x, y, w, h) = rect
@@ -129,7 +132,7 @@ class FaceRecognition:
         names = []
         subjects_paths = os.listdir(self.dir)
         for path in subjects_paths:
-            full_path = dir + "/" + path
+            full_path = self.dir + "/" + path
             print("processing: ", full_path)
             img = self.load_image(full_path)
             face = self.detector(img, 1)
@@ -181,11 +184,9 @@ class FaceRecognition:
         return np.linalg.norm(known - unknown, axis=1)
 
 
-    def read_stream(self, e):
+    def read_stream(self):
         this_frame = True
         while True:
-            if e.is_set() == False:
-                e.wait()
             ret, frame = self.cap.read()
             if frame is not None:
                 if this_frame:
@@ -195,9 +196,7 @@ class FaceRecognition:
                 this_frame = not this_frame
 
 
-    def process(self, e):
-        if e.is_set() == False:
-            e.wait()
+    def process(self):
         labels = []
         frame = self.frameQ.get()
         faces = self.detect(frame)
@@ -220,9 +219,10 @@ class FaceRecognition:
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        cv2.imshow("SmartGate", frame)
-        cv2.waitKey(1)
-        self.frameQ.task_done()
+        self.outputQ.put(frame)
+        # cv2.imshow("SmartGate", frame)
+        # cv2.waitKey(1)
+        # self.frameQ.task_done()
         return labels
 
 
@@ -252,9 +252,7 @@ class FaceRecognition:
             return label, False
 
 
-    def access(self, e, labels):
-        if e.is_set() == False:
-            e.wait()
+    def access(self, labels):
         self.arduino_server_pool2.apply_async(self.arduino_ring)
         if self.ring:
             print("ring in access")
@@ -301,9 +299,7 @@ class FaceRecognition:
             self.ring = True
 
 
-    def arduino_server(self, e):
-        if e.is_set() == False:
-            e.wait()
+    def arduino_server(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.host, self.port1))
@@ -311,99 +307,66 @@ class FaceRecognition:
         self.c, addr = self.s.accept()
         print(addr, " connected")
 
-    def list(self, mode):
-        if mode == "names":
-            for name in self.names:
-                print(name)
-        if mode == "auth":
-            for auth in self.authorized:
-                print(auth)
-        else:
-            print("unknown mode (names, auth)")
+    # def list(self, mode):
+    #     if mode == "names":
+    #         for name in self.names:
+    #             print(name)
+    #     if mode == "auth":
+    #         for auth in self.authorized:
+    #             print(auth)
+    #     else:
+    #         print("unknown mode (names, auth)")
+    #
+    #
+    # def print_log(self):
+    #     print("resize factor: ", self.resize_factor)
+    #     print("device in use: ", self.device)
+    #     print("names in file names.pkl", self.names)
 
 
-    def print_log(self):
-        print("resize factor: ", self.resize_factor)
-        print("device in use: ", self.device)
-        print("names in file names.pkl", self.names)
+    # def console(self, e):
+    #     while True:
+    #         command = input("FaceRecognition:~$ ")
+    #         if command.split(" ")[0] == "list":
+    #             self.list(command.split(" ")[1])
+    #         elif command == "resizing":
+    #             self.resize_lock.acquire()
+    #             self.resize_factor = float(input("enter resize factor: "))
+    #             self.resize_lock.release()
+    #             print("resize factor has been changed, wait to see effect")
+    #         elif command == "run encoding":
+    #             t1 = threading.Thread(target=self.known_subjects_descriptors)
+    #             t1.daemon = True
+    #             t1.start()
+    #             while True:
+    #                 if t1.is_alive() is False:
+    #                     e.clear()
+    #                     if self.load_files():
+    #                         self.cap = cv2.VideoCapture(self.device)
+    #                         e.set()
+    #                         break
+    #         elif command == "start":
+    #             self.cap = cv2.VideoCapture(self.device)
+    #             e.set()
+    #         elif command == "pause":
+    #             e.clear()
+    #         elif command == "device":
+    #             e.clear()
+    #             self.device = input("enter a device: ")
+    #             self.cap.release()
+    #             cv2.destroyAllWindows()
+    #             self.cap = cv2.VideoCapture(self.device)
+    #             e.set()
+    #         elif command == "restart":
+    #             e.clear()
+    #             self.cap.release()
+    #             cv2.destroyAllWindows()
+    #             self.cap = cv2.VideoCapture(self.device)
+    #             e.set()
+    #
+    #         else:
+    #             print("unknown command")
 
 
-    def console(self, e):
-        while True:
-            command = input("FaceRecognition:~$ ")
-            if command.split(" ")[0] == "list":
-                self.list(command.split(" ")[1])
-            elif command == "resizing":
-                self.resize_lock.acquire()
-                self.resize_factor = float(input("enter resize factor: "))
-                self.resize_lock.release()
-                print("resize factor has been changed, wait to see effect")
-            elif command == "run encoding":
-                t1 = threading.Thread(target=self.known_subjects_descriptors)
-                t1.daemon = True
-                t1.start()
-                while True:
-                    if t1.is_alive() is False:
-                        e.clear()
-                        if self.load_files():
-                            self.cap = cv2.VideoCapture(self.device)
-                            e.set()
-                            break
-            elif command == "start":
-                self.cap = cv2.VideoCapture(self.device)
-                e.set()
-            elif command == "pause":
-                e.clear()
-            elif command == "device":
-                e.clear()
-                self.device = input("enter a device: ")
-                self.cap.release()
-                cv2.destroyAllWindows()
-                self.cap = cv2.VideoCapture(self.device)
-                e.set()
-            elif command == "restart":
-                e.clear()
-                self.cap.release()
-                cv2.destroyAllWindows()
-                self.cap = cv2.VideoCapture(self.device)
-                e.set()
-
-            else:
-                print("unknown command")
-
-stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
-stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
-stream3 = "http://192.168.12.6:8080/video"
-stream4 = "http://192.168.137.252:8080/video"
-working_file = "/home/user/Documents/dlib/models/"
-models = [working_file + "shape_predictor_5_face_landmarks.dat",
-              working_file + "dlib_face_recognition_resnet_model_v1.dat",
-              working_file + "shape_predictor_68_face_landmarks.dat"]
-dir = "/home/user/PycharmProjects/resource/subjects"
-rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
-x = FaceRecognition(models, dir, stream4, 0.25)
-#x.known_subjects_descriptors()
-x.load_files()
-
-
-e = threading.Event()
-console_thread = threading.Thread(target=x.console, args=(e,))
-stream_thread = threading.Thread(target=x.read_stream, args=(e,))
-arduino_thread = threading.Thread(target=x.arduino_server, args=(e,))
-process_pool = ThreadPool(processes=1)
-access_pool = ThreadPool(processes=1)
-console_thread.start()
-# arduino_thread.daemon = True
-# arduino_thread.start()
-stream_thread.daemon = True
-stream_thread.start()
-
-
-
-
-while True:
-    result = process_pool.apply_async(x.process, args=(e,))
-    labels = result.get()
-    access = access_pool.apply_async(x.access, args=(e, labels,))
 
 
