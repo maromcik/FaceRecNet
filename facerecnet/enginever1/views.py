@@ -41,21 +41,22 @@ stream_server_pool = ThreadPool(processes=1)
 
 
 def recognition():
-    arduino_thread.daemon = True
-    arduino_thread.start()
-    stream_thread.daemon = True
-    stream_thread.start()
+    pass
 
 FaceRecThread = threading.Thread(target=recognition)
 
 def stream_server():
-    if FaceRecThread.isAlive() == False:
-        FaceRecThread.start()
+    arduino_thread.daemon = True
+    arduino_thread.start()
+    stream_thread.daemon = True
+    stream_thread.start()
     while True:
         process = process_pool.apply_async(x.process)
-        labels = process.get()
+        labels, image = process.get()
         access = access_pool.apply_async(x.access, args=(labels,))
-        image = x.outputQ.get()
+        # image = x.outputQ.get()
+        cv2.imshow("live", image)
+        cv2.waitKey(1)
         ret, jpeg = cv2.imencode('.jpg', image)
         frame = jpeg.tobytes()
         yield(b'--frame\r\n'
@@ -70,9 +71,10 @@ def runfacerec(request):
         FaceRecThread.start()
         return HttpResponse("Face Recognition has been started!")
 
-@gzip.gzip_page
+# @gzip.gzip_page
 def index(request):
     try:
+        # stream_server()
         return StreamingHttpResponse(stream_server(), content_type="multipart/x-mixed-replace;boundary=frame")
     except HttpResponseServerError as e:
         print("aborted")

@@ -219,11 +219,11 @@ class FaceRecognition:
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        self.outputQ.put(frame)
+        # self.outputQ.put(frame)
         # cv2.imshow("SmartGate", frame)
         # cv2.waitKey(1)
-        # self.frameQ.task_done()
-        return labels
+        self.frameQ.task_done()
+        return labels, frame
 
 
     def blink_detector(self, landmark, label):
