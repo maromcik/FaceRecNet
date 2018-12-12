@@ -46,10 +46,13 @@ def recognition():
 FaceRecThread = threading.Thread(target=recognition)
 
 def stream_server():
-    arduino_thread.daemon = True
-    arduino_thread.start()
-    stream_thread.daemon = True
-    stream_thread.start()
+    if arduino_thread.isAlive() or stream_thread.isAlive():
+        pass
+    else:
+        arduino_thread.daemon = True
+        arduino_thread.start()
+        stream_thread.daemon = True
+        stream_thread.start()
     while True:
         process = process_pool.apply_async(x.process)
         labels, image = process.get()
@@ -57,6 +60,7 @@ def stream_server():
         # image = x.outputQ.get()
         cv2.imshow("live", image)
         cv2.waitKey(1)
+        image = x.resize_img(image, fx=2, fy=2)
         ret, jpeg = cv2.imencode('.jpg', image)
         frame = jpeg.tobytes()
         yield(b'--frame\r\n'
