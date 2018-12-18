@@ -21,7 +21,7 @@ from API import FaceRecAPI
 stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
 stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
 stream3 = "http://192.168.1.241:8080/video"
-stream4 = "http://192.168.137.219:8080/video"
+stream4 = "http://192.168.137.202:8080/video"
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
           working_file + "dlib_face_recognition_resnet_model_v1.dat",
@@ -29,7 +29,7 @@ models = [working_file + "shape_predictor_5_face_landmarks.dat",
 dir = "/home/user/PycharmProjects/resource/subjects"
 rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
 
-x = FaceRecAPI.FaceRecognition(models, dir, stream3, 0.25)
+x = FaceRecAPI.FaceRecognition(models, dir, stream4, 0.25)
 # x.known_subjects_descriptors()
 x.load_files()
 e = threading.Event()
@@ -70,7 +70,7 @@ def stream_server():
 
 def runfacerec(request):
     if FaceRecThread.isAlive():
-        return HttpResponse(render(request, 'enginever1/results.html'))
+        return HttpResponse(render(request, 'LiveView/results.html'))
     else:
         FaceRecThread.start()
         return HttpResponse("Face Recognition has been started!")

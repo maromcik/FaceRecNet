@@ -18,5 +18,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('enginever1/', include('enginever1.urls')),
+    path('LiveView/', include('LiveView.urls')),
 ]
