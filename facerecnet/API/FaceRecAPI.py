@@ -9,7 +9,6 @@ from multiprocessing.pool import ThreadPool
 import pickle
 import socket
 
-
 class FaceRecognition:
     def __init__(self, models_paths, dir, device, resize_factor):
         self.device = device
