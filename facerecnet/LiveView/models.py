@@ -3,7 +3,7 @@ from django.db import models
 class Person(models.Model):
     name = models.CharField(max_length=50)
     authorized = models.NullBooleanField()
-    file_path = models.CharField(max_length=300)
+    file = models.ImageField(upload_to="persons/")
     class Meta:
         verbose_name_plural = "persons"
 
