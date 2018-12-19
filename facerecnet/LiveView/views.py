@@ -29,7 +29,7 @@ models = [working_file + "shape_predictor_5_face_landmarks.dat",
 dir = "/home/user/PycharmProjects/resource/subjects"
 rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
 
-x = FaceRecAPI.FaceRecognition(models, dir, stream4, 0.25)
+x = FaceRecAPI.FaceRecognition(models, dir, stream3, 0.25)
 # x.known_subjects_descriptors()
 x.load_files()
 e = threading.Event()
