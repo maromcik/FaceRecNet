@@ -40,6 +40,11 @@ access_pool = ThreadPool(processes=1)
 stream_server_pool = ThreadPool(processes=1)
 
 
+def login(request):
+    return HttpResponse(render(request, 'LiveView/login.html'))
+
+
+
 def recognition():
     pass
 
