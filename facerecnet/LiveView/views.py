@@ -17,27 +17,29 @@ import multiprocessing
 import pickle
 import socket
 from API import FaceRecAPI
+from . models import Log, Person
 
-stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
-stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
-stream3 = "http://192.168.1.241:8080/video"
-stream4 = "http://192.168.137.202:8080/video"
-working_file = "/home/user/Documents/dlib/models/"
-models = [working_file + "shape_predictor_5_face_landmarks.dat",
-          working_file + "dlib_face_recognition_resnet_model_v1.dat",
-          working_file + "shape_predictor_68_face_landmarks.dat"]
-dir = "/home/user/PycharmProjects/resource/subjects"
-rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
 
-x = FaceRecAPI.FaceRecognition(models, dir, stream3, 0.25)
-# x.known_subjects_descriptors()
-x.load_files()
-e = threading.Event()
-stream_thread = threading.Thread(target=x.read_stream)
-arduino_thread = threading.Thread(target=x.arduino_server)
-process_pool = ThreadPool(processes=1)
-access_pool = ThreadPool(processes=1)
-stream_server_pool = ThreadPool(processes=1)
+# stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
+# stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
+# stream3 = "http://192.168.1.241:8080/video"
+# stream4 = "http://192.168.137.202:8080/video"
+# working_file = "/home/user/Documents/dlib/models/"
+# models = [working_file + "shape_predictor_5_face_landmarks.dat",
+#           working_file + "dlib_face_recognition_resnet_model_v1.dat",
+#           working_file + "shape_predictor_68_face_landmarks.dat"]
+# dir = "/home/user/PycharmProjects/resource/subjects"
+# rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
+#
+# x = FaceRecAPI.FaceRecognition(models, dir, stream3, 0.25)
+# # x.known_subjects_descriptors()
+# x.load_files()
+# e = threading.Event()
+# stream_thread = threading.Thread(target=x.read_stream)
+# arduino_thread = threading.Thread(target=x.arduino_server)
+# process_pool = ThreadPool(processes=1)
+# access_pool = ThreadPool(processes=1)
+# stream_server_pool = ThreadPool(processes=1)
 
 
 def login(request):

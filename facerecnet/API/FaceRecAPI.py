@@ -8,6 +8,9 @@ from queue import Queue
 from multiprocessing.pool import ThreadPool
 import pickle
 import socket
+from LiveView.models import Log
+from LiveView.models import Person
+
 
 class FaceRecognition:
     def __init__(self, models_paths, dir, device, resize_factor):
