@@ -34,7 +34,6 @@ rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
 x = FaceRecAPI.FaceRecognition(models, dir, stream3, 0.25)
 # x.known_subjects_descriptors()
 x.load_files()
-e = threading.Event()
 stream_thread = threading.Thread(target=x.read_stream)
 arduino_thread = threading.Thread(target=x.arduino_server)
 process_pool = ThreadPool(processes=1)
@@ -42,17 +41,10 @@ access_pool = ThreadPool(processes=1)
 stream_server_pool = ThreadPool(processes=1)
 
 
-def login(request):
-    return HttpResponse(render(request, 'LiveView/login.html'))
-
-
-
-def recognition():
-    pass
-
-FaceRecThread = threading.Thread(target=recognition)
 
 def stream_server():
+    if x.cap is None:
+        x.grab_cap()
     if arduino_thread.isAlive() or stream_thread.isAlive():
         pass
     else:
@@ -64,26 +56,17 @@ def stream_server():
         process = process_pool.apply_async(x.process)
         labels, image = process.get()
         access = access_pool.apply_async(x.access, args=(labels,))
-        # image = x.outputQ.get()
         cv2.imshow("live", image)
         cv2.waitKey(1)
-        image = x.resize_img(image, fx=2, fy=2)
+        # image = x.resize_img(image, fx=2, fy=2)
         ret, jpeg = cv2.imencode('.jpg', image)
         frame = jpeg.tobytes()
         yield(b'--frame\r\n'
         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
 
-
-def runfacerec(request):
-    if FaceRecThread.isAlive():
-        return HttpResponse(render(request, 'LiveView/results.html'))
-    else:
-        FaceRecThread.start()
-        return HttpResponse("Face Recognition has been started!")
-
 # @gzip.gzip_page
-def index(request):
+def stream(request):
     try:
         # stream_server()
         return StreamingHttpResponse(stream_server(), content_type="multipart/x-mixed-replace;boundary=frame")

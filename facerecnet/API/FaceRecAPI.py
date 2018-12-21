@@ -8,16 +8,15 @@ from queue import Queue
 from multiprocessing.pool import ThreadPool
 import pickle
 import socket
-from LiveView.models import Log
-from LiveView.models import Person
+import LiveView.models as database
 
 
 class FaceRecognition:
     def __init__(self, models_paths, dir, device, resize_factor):
         self.device = device
-        self.cap = cv2.VideoCapture(self.device)
         self.models = models_paths
         self.dir = dir
+        self.cap = None
 
         self.frameQ = Queue()
         self.outputQ = Queue()
@@ -52,9 +51,6 @@ class FaceRecognition:
 
         self.ring = False
 
-    def __del__(self):
-        self.cap.release()
-
     def draw(self, img, rect):
         (x, y, w, h) = rect
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -82,7 +78,26 @@ class FaceRecognition:
         return img
 
 
+    def grab_cap(self):
+
+        self.cap = cv2.VideoCapture(self.device)
+
+
+
     def load_files(self):
+        self.persons = database.Person.objects.all()
+        self.pks = list(self.persons.values_list('id', flat=True))
+        print("primary keys have been loaded")
+        self.names = list(self.persons.values_list('name', flat=True))
+        print("names have been loaded")
+        self.authorized_pks = list(self.persons.values_list('authorized', flat=True))
+        print("authorization values have been loaded")
+        self.files = list(self.persons.values_list('file', flat=True))
+        print("images have been loaded")
+        for name, authorized_pk in zip(self.names, self.authorized_pks):
+            if authorized_pk:
+                self.authorized.append(name)
+
         try:
             with open('descriptors.pkl', 'rb') as infile:
                 self.descriptors = pickle.load(infile)
@@ -101,53 +116,19 @@ class FaceRecognition:
                 print("terminating")
                 exit(101)
 
-        try:
-            with open('names.pkl', 'rb') as infile:
-                self.names = pickle.load(infile)
-            print("names have been loaded")
-            infile.close()
-
-        except FileNotFoundError:
-            print("file names.pkl not found")
-            if input("Do you want to run the known people encoding? y/n: ").lower() == 'y':
-                self.known_subjects_descriptors()
-                with open('names.pkl', 'rb') as infile:
-                    self.names = pickle.load(infile)
-                print("names have been loaded")
-                infile.close()
-            else:
-                print("terminating")
-                exit(102)
-        try:
-            with open("authorized.txt", "r") as file:
-                for line in file.readlines():
-                    self.authorized.append(line.strip("\n"))
-                print("names of authorized personnel have been loaded")
-                file.close()
-        except FileNotFoundError:
-            print("File with authorized personnel was not found")
-            return False
         return True
 
     def known_subjects_descriptors(self):
         descriptors = []
-        names = []
-        subjects_paths = os.listdir(self.dir)
-        for path in subjects_paths:
-            full_path = self.dir + "/" + path
+        self.dir = os.path.join(os.path.dirname(__file__), "..")
+        for i in range(0, len(self.files)):
+            full_path = self.dir + "/" + self.files[i]
             print("processing: ", full_path)
             img = self.load_image(full_path)
             face = self.detector(img, 1)
-            if len(face)!=0:
-                if ".png" in path:
-                    name = path.split('.png')[0]
-                elif ".jpg" in path:
-                    name = path.split(".jpg")[0]
-                else:
-                    continue
+            if len(face) != 0:
                 landmarks = self.predictor68(img, face[0])
                 descriptors.append(np.array(self.facerec_model.compute_face_descriptor(img, landmarks)))
-                names.append(name)
             else:
                 print("No face in picture {}".format(full_path))
                 os.remove(full_path)
@@ -156,11 +137,6 @@ class FaceRecognition:
             pickle.dump(descriptors, outfile, pickle.HIGHEST_PROTOCOL)
         outfile.close()
         print("descriptors of known people has been saved")
-
-        with open('names.pkl', 'wb') as outfile:
-            pickle.dump(names, outfile, pickle.HIGHEST_PROTOCOL)
-        outfile.close()
-        print("names of known people has been saved")
 
 
     def detect(self, img):
@@ -368,7 +344,5 @@ class FaceRecognition:
     #
     #         else:
     #             print("unknown command")
-
-
 
 

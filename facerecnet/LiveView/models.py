@@ -4,6 +4,8 @@ class Person(models.Model):
     name = models.CharField(max_length=50)
     authorized = models.NullBooleanField()
     file = models.ImageField(upload_to="persons/")
+    def __str__(self):
+        return self.name
     class Meta:
         verbose_name_plural = "persons"
 
