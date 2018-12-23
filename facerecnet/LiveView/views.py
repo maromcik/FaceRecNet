@@ -72,3 +72,7 @@ def stream(request):
         return StreamingHttpResponse(stream_server(), content_type="multipart/x-mixed-replace;boundary=frame")
     except HttpResponseServerError as e:
         print("aborted")
+
+
+def index(request):
+    return HttpResponse("LIVEVIEW APP")
