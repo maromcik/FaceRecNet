@@ -9,13 +9,14 @@ from multiprocessing.pool import ThreadPool
 import pickle
 import socket
 import LiveView.models as database
+from django.utils import timezone
 
 
 class FaceRecognition:
-    def __init__(self, models_paths, dir, device, resize_factor):
+    def __init__(self, models_paths, device, resize_factor):
         self.device = device
         self.models = models_paths
-        self.dir = dir
+        self.dir = os.path.join(os.path.dirname(__file__), "..")
         self.cap = None
 
         self.frameQ = Queue()
@@ -244,7 +245,7 @@ class FaceRecognition:
             return label, False
 
 
-    def access(self, labels):
+    def access(self, labels, image):
         self.arduino_server_pool2.apply_async(self.arduino_ring)
         if self.ring:
             print("ring in access")
@@ -258,21 +259,35 @@ class FaceRecognition:
                     self.unknown_count += 1
                     if (self.empty_count1 > 13) and self.unknown_count > 8:
                         print("unknown")
+                        filename = self.dir+"/snapshots/unknown.jpg"
+                        cv2.imwrite(filename, image)
                         self.unknown_count = 0
                         self.empty_count1 = 0
+                        log = database.Log.objects.create(person=None,time=timezone.now(), granted=False,
+                                                          snapshot=filename)
+                        log.save()
                 else:
                     if self.names[label[0]] in self.authorized:
                         if label[1] == True:
                             if time.time() - self.trigtime >= 2:
                                 self.trigtime = time.time()
-                                print("access granted for: ", self.names[label[0]])
+                                name = self.names[label[0]]
+                                print("access granted for: ", name)
                                 self.arduino_server_pool.apply_async(self.arduino_open)
+                                person = database.Person.objects.get(name=name)
+                                log = database.Log.objects.create(person=person, time=timezone.now(), granted=True,
+                                                                  snapshot=None)
+                                log.save()
                     else:
                         self.auth_count += 1
                         if (self.empty_count2 > 10) and self.auth_count > 5:
                             self.empty_count2 = 0
                             self.auth_count = 0
-                            print("access denied for: ", self.names[label[0]])
+                            name = self.names[label[0]]
+                            print("access denied for: ", name)
+                            person = database.Person.objects.get(name=name)
+                            log = database.Log.objects.create(person=person, time=timezone.now(), granted=False, snapshot=None)
+                            log.save()
 
 
     def arduino_open(self):
@@ -298,65 +313,4 @@ class FaceRecognition:
         self.s.listen(1)
         self.c, addr = self.s.accept()
         print(addr, " connected")
-
-    # def list(self, mode):
-    #     if mode == "names":
-    #         for name in self.names:
-    #             print(name)
-    #     if mode == "auth":
-    #         for auth in self.authorized:
-    #             print(auth)
-    #     else:
-    #         print("unknown mode (names, auth)")
-    #
-    #
-    # def print_log(self):
-    #     print("resize factor: ", self.resize_factor)
-    #     print("device in use: ", self.device)
-    #     print("names in file names.pkl", self.names)
-
-
-    # def console(self, e):
-    #     while True:
-    #         command = input("FaceRecognition:~$ ")
-    #         if command.split(" ")[0] == "list":
-    #             self.list(command.split(" ")[1])
-    #         elif command == "resizing":
-    #             self.resize_lock.acquire()
-    #             self.resize_factor = float(input("enter resize factor: "))
-    #             self.resize_lock.release()
-    #             print("resize factor has been changed, wait to see effect")
-    #         elif command == "run encoding":
-    #             t1 = threading.Thread(target=self.known_subjects_descriptors)
-    #             t1.daemon = True
-    #             t1.start()
-    #             while True:
-    #                 if t1.is_alive() is False:
-    #                     e.clear()
-    #                     if self.load_files():
-    #                         self.cap = cv2.VideoCapture(self.device)
-    #                         e.set()
-    #                         break
-    #         elif command == "start":
-    #             self.cap = cv2.VideoCapture(self.device)
-    #             e.set()
-    #         elif command == "pause":
-    #             e.clear()
-    #         elif command == "device":
-    #             e.clear()
-    #             self.device = input("enter a device: ")
-    #             self.cap.release()
-    #             cv2.destroyAllWindows()
-    #             self.cap = cv2.VideoCapture(self.device)
-    #             e.set()
-    #         elif command == "restart":
-    #             e.clear()
-    #             self.cap.release()
-    #             cv2.destroyAllWindows()
-    #             self.cap = cv2.VideoCapture(self.device)
-    #             e.set()
-    #
-    #         else:
-    #             print("unknown command")
-
 

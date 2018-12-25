@@ -17,8 +17,11 @@ from multiprocessing.pool import ThreadPool
 import multiprocessing
 import pickle
 import socket
+import datetime
 from API import FaceRecAPI
 from . models import Log, Person
+
+
 
 
 stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
@@ -32,7 +35,7 @@ models = [working_file + "shape_predictor_5_face_landmarks.dat",
 dir = "/home/user/PycharmProjects/resource/subjects"
 rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
 
-x = FaceRecAPI.FaceRecognition(models, dir, stream3, 0.25)
+x = FaceRecAPI.FaceRecognition(models, stream3, 0.25)
 x.load_files()
 stream_thread = threading.Thread(target=x.read_stream)
 arduino_thread = threading.Thread(target=x.arduino_server)
@@ -56,27 +59,12 @@ def facerecognition():
     while True:
         process = process_pool.apply_async(x.process)
         labels, image = process.get()
-        access = access_pool.apply_async(x.access, args=(labels,))
+        access = access_pool.apply_async(x.access, args=(labels,image))
         cv2.imshow("live", image)
         cv2.waitKey(1)
         if frameQ.full():
             continue
         frameQ.put(image)
-
-facerecognition_thread = threading.Thread(target=facerecognition)
-
-
-def run_encodings(request):
-    x.load_files()
-    x.known_subjects_descriptors()
-    x.load_files()
-    message = "encoding done"
-    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
-
-def load_files(request):
-    x.load_files()
-    message = "files have been loaded"
-    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
 
 def stream_server():
 
@@ -86,6 +74,24 @@ def stream_server():
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'
         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+
+facerecognition_thread = threading.Thread(target=facerecognition)
+
+
+@login_required(login_url='/accounts/login')
+def run_encodings(request):
+    x.load_files()
+    x.known_subjects_descriptors()
+    x.load_files()
+    message = "encoding done"
+    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
+
+
+@login_required(login_url='/accounts/login')
+def load_files(request):
+    x.load_files()
+    message = "files have been loaded"
+    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
 
 
 @login_required(login_url='/accounts/login')
