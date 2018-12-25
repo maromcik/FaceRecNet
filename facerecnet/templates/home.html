@@ -5,7 +5,26 @@
 {% block content %}
 {% if user.is_authenticated %}
   Hi {{ user.username }}!
-  <p><a href="{% url 'logout' %}">logout</a></p>
+  <form action="LiveView" method="GET">
+  {{ form.as_p }}
+  <button type="submit">RUN</button>
+</form>
+
+  <form action="LiveView/stream" method="GET">
+  {{ form.as_p }}
+  <button type="submit">RUN and open stream</button>
+</form>
+
+  <form action="LiveView/encoding" method="GET">
+  {{ form.as_p }}
+  <button type="submit">RUN encodings</button>
+</form>
+
+  <form action="LiveView/load" method="GET">
+  {{ form.as_p }}
+  <button type="submit">Load files</button>
+</form>
+
 {% else %}
   <p>You are not logged in</p>
   <a href="{% url 'login' %}">login</a>

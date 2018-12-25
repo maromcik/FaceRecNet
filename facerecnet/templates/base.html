@@ -1,13 +1,26 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>{% block title %}Auth{% endblock %}</title>
+  <meta name="base" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+  <title>{% block title %}Smart Gate{% endblock %}</title>
 </head>
 <body>
+  <header class="container center-allign">
+    <h1>Smart Gate</h1>
+  </header>
   <main>
-    {% block content %}
-    {% endblock %}
+     <header class="container center-allign">
+     </header>
+    <div class="container">
+      {% block content %}
+      {% endblock %}
+      {% if user.is_authenticated %}
+       <p><a href="{% url 'logout' %}">logout</a></p>
+      {% endif %}
+    </div>
   </main>
 </body>
 </html>

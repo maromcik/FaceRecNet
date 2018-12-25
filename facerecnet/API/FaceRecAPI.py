@@ -51,6 +51,17 @@ class FaceRecognition:
 
         self.ring = False
 
+        self.persons = database.Person.objects.all()
+        self.pks = list(self.persons.values_list('id', flat=True))
+        print("primary keys have been loaded")
+        self.names = list(self.persons.values_list('name', flat=True))
+        print("names have been loaded")
+        self.authorized_pks = list(self.persons.values_list('authorized', flat=True))
+        print("authorization values have been loaded")
+        self.files = list(self.persons.values_list('file', flat=True))
+        print("images have been loaded")
+
+
     def draw(self, img, rect):
         (x, y, w, h) = rect
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -188,7 +199,10 @@ class FaceRecognition:
                 for comparison in comparisons:
                     if comparison <= 0.55:
                         label = comparisons.index(comparison)
-                        self.PrintText(frame, self.names[label], rect[0], rect[1])
+                        try:
+                            self.PrintText(frame, self.names[label], rect[0], rect[1])
+                        except IndexError:
+                            print("Person does not exist anymore, you're most likely running encodings")
                         labels.append(self.blink_detector(landmarks[y], label))
 
                 if all(i >= 0.55 for i in comparisons):

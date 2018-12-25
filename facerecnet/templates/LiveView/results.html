@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}LiveView App{% endblock %}
+
+{% block content %}
+{{ message }}
+  <form action="stream" method="GET">
+  {{ form.as_p }}
+  <button type="submit">open stream</button>
+</form>
+
+  <form action="encoding" method="GET">
+  {{ form.as_p }}
+  <button type="submit">RUN encodings</button>
+</form>
+
+  <form action="load" method="GET">
+  {{ form.as_p }}
+  <button type="submit">Load files</button>
+</form>
+
+{% endblock %}
+
+
