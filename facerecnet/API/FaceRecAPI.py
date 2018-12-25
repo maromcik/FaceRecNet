@@ -8,6 +8,8 @@ from queue import Queue
 from multiprocessing.pool import ThreadPool
 import pickle
 import socket
+import string
+import secrets
 import LiveView.models as database
 from django.utils import timezone
 
@@ -259,7 +261,8 @@ class FaceRecognition:
                     self.unknown_count += 1
                     if (self.empty_count1 > 13) and self.unknown_count > 8:
                         print("unknown")
-                        filename = self.dir+"/snapshots/unknown.jpg"
+                        text = ''.join(secrets.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(20))
+                        filename = self.dir+"/snapshots/"+text+".jpg"
                         cv2.imwrite(filename, image)
                         self.unknown_count = 0
                         self.empty_count1 = 0
