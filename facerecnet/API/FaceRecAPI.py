@@ -216,7 +216,7 @@ class FaceRecognition:
         # cv2.imshow("SmartGate", frame)
         # cv2.waitKey(1)
         self.frameQ.task_done()
-        return labels, frame
+        return labels, frame  #return original image as well
 
 
     def blink_detector(self, landmark, label):

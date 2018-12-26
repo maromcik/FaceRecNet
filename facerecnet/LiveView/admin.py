@@ -5,11 +5,11 @@ from django.utils.html import format_html
 
 
 class LogAdmin(admin.ModelAdmin):
-    list_display = ['person', 'time', 'granted', 'image_tag2']
+    list_display = ['person', 'time', 'granted', 'image_tag']
     list_filter = ['person', 'time', 'granted']
     search_fields = ['person__name']
 
-    def image_tag2(self, obj):
+    def image_tag(self, obj):
         try:
             return mark_safe('<img src="{url}" height={height} />'.format(
                 url = obj.snapshot.url,
@@ -19,11 +19,13 @@ class LogAdmin(admin.ModelAdmin):
         except ValueError:
             pass
 
+    image_tag.short_description = 'Image'
+
 
 
 class PersonAdmin(admin.ModelAdmin):
 
-    list_filter = ['name', 'authorized']
+    list_filter = ['authorized']
     search_fields = ['name']
     fields = ['name', 'authorized', 'file']
     list_display = ['name', 'authorized', 'image_tag']
@@ -36,6 +38,8 @@ class PersonAdmin(admin.ModelAdmin):
             height=150,
         )
     )
+
+    image_tag.short_description = 'Image'
 
 admin.site.register(Log, LogAdmin)
 admin.site.register(Person, PersonAdmin)
