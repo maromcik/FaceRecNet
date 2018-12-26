@@ -93,9 +93,7 @@ class FaceRecognition:
 
 
     def grab_cap(self):
-
         self.cap = cv2.VideoCapture(self.device)
-
 
 
     def load_files(self):
