@@ -9,4 +9,6 @@ urlpatterns = [
     path('stream', views.stream, name='stream'),
     path('encoding', views.run_encodings, name='Run Encodings'),
     path('load', views.load_files, name='Load Files'),
+    path('grab', views.grab_cap, name='Grab Capture'),
+    path('release', views.release_cap, name='Release Capture'),
 ]

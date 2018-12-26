@@ -45,17 +45,21 @@ stream_server_pool = ThreadPool(processes=1)
 frameQ = Queue(maxsize=5)
 
 
-def facerecognition():
-    print("Face Recognition is running")
-    if x.cap is None:
-        x.grab_cap()
-    if arduino_thread.isAlive() or stream_thread.isAlive():
-        pass
-    else:
+def startrecognition():
+    if arduino_thread.isAlive() is False:
         arduino_thread.daemon = True
         arduino_thread.start()
+    if stream_thread.isAlive() is False:
         stream_thread.daemon = True
         stream_thread.start()
+
+
+def facerecognition():
+    print("face recognition is starting up")
+    if x.cap is None:
+        x.grab_cap()
+    startrecognition()
+    print("Face Recognition is running")
     while True:
         process = process_pool.apply_async(x.process)
         labels, image = process.get()
@@ -76,6 +80,27 @@ def stream_server():
         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
 facerecognition_thread = threading.Thread(target=facerecognition)
+
+
+# @login_required(login_url='/accounts/login')
+# def release_cap(request):
+#     if facerecognition_thread.isAlive():
+#         x.cap.release()
+#         message = "Video capture released"
+#     else:
+#         message = "Face recognition is not running"
+#     return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
+
+
+@login_required(login_url='/accounts/login')
+def grab_cap(request):
+    if facerecognition_thread.isAlive():
+        x.grab_cap()
+        startrecognition()
+        message = "Video capture grabbed"
+    else:
+        message = "Face recognition is not running"
+    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
 
 
 @login_required(login_url='/accounts/login')

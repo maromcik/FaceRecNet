@@ -136,7 +136,7 @@ class FaceRecognition:
         descriptors = []
         self.dir = os.path.join(os.path.dirname(__file__), "..")
         for i in range(0, len(self.files)):
-            full_path = self.dir + "/" + self.files[i]
+            full_path = self.dir + "/media/" + self.files[i]
             print("processing: ", full_path)
             img = self.load_image(full_path)
             face = self.detector(img, 1)
@@ -262,12 +262,14 @@ class FaceRecognition:
                     if (self.empty_count1 > 13) and self.unknown_count > 8:
                         print("unknown")
                         text = ''.join(secrets.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(20))
-                        filename = self.dir+"/snapshots/"+text+".jpg"
-                        cv2.imwrite(filename, image)
+                        fullpath = self.dir+"/media/snapshots/"+text+".jpg"
+                        djangopath = "snapshots/"+text+".jpg"
+                        if(cv2.imwrite(fullpath, image)):
+                            print("snap saved")
                         self.unknown_count = 0
                         self.empty_count1 = 0
                         log = database.Log.objects.create(person=None,time=timezone.now(), granted=False,
-                                                          snapshot=filename)
+                                                          snapshot=djangopath)
                         log.save()
                 else:
                     if self.names[label[0]] in self.authorized:

@@ -7,6 +7,8 @@ class Person(models.Model):
     file = models.ImageField(upload_to="persons/")
     def __str__(self):
         return self.name
+    def __unicode__(self):
+        return self.name
     class Meta:
         verbose_name_plural = "persons"
 
@@ -18,9 +20,8 @@ class Log(models.Model):
     snapshot = models.ImageField(upload_to="snapshots/", blank=True)
     def __str__(self):
         try:
-            return str(self.person.name)+" - "+str(self.time.strftime("%d. %m. %Y, %H:%M:%S"))
+            return str(self.person.name)
         except AttributeError:
-            return "unknown" + " - " + str(self.time.strftime("%d. %m. %Y, %H:%M:%S"))
-
+            return "unknown"
     class Meta:
         verbose_name_plural = "logs"
