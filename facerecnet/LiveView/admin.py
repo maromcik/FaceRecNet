@@ -1,7 +1,10 @@
 from django.contrib import admin
 from LiveView.models import Person, Log
 from django.utils.safestring import mark_safe
-from django.utils.html import format_html
+from django.template.response import TemplateResponse
+from django.urls import path
+from LiveView.views import x
+from django.http import HttpResponseRedirect
 
 
 class LogAdmin(admin.ModelAdmin):
@@ -29,8 +32,26 @@ class PersonAdmin(admin.ModelAdmin):
     search_fields = ['name']
     fields = ['name', 'authorized', 'file']
     list_display = ['name', 'authorized', 'image_tag']
+    change_list_template = "LiveView/change_list.html"
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('encoding/', self.run_encodings),
+            path('load/', self.load_files),
+        ]
+        return my_urls + urls
 
+    def run_encodings(self, request):
+        x.load_files()
+        x.known_subjects_descriptors()
+        x.load_files()
+        self.message_user(request, "encodings done!")
+        return HttpResponseRedirect("../")
 
+    def load_files(self, request):
+        x.load_files()
+        self.message_user(request, "files loaded!")
+        return HttpResponseRedirect("../")
 
     def image_tag(self, obj):
         return mark_safe('<img src="{url}" height={height} />'.format(
