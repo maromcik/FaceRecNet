@@ -6,16 +6,6 @@
 {% if user.is_authenticated %}
   Hi {{ user.username }}!
 
-  <form action="LiveView/encoding" method="GET">
-  {{ form.as_p }}
-  <button type="submit">run encodings</button>
-</form>
-
-  <form action="LiveView/load" method="GET">
-  {{ form.as_p }}
-  <button type="submit">load files</button>
-</form>
-
   <form action="LiveView" method="GET">
   {{ form.as_p }}
   <button type="submit">run</button>

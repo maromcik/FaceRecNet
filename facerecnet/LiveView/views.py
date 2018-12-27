@@ -1,27 +1,12 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
 from django.contrib.auth.decorators import login_required
-from django.views import generic
 from django.http import StreamingHttpResponse, HttpResponseServerError
-from django.views.decorators.gzip import gzip_page
-from django.views.decorators import gzip
-import dlib
 import cv2
-import numpy as np
-import time
-import os
 import threading
 from queue import Queue
 from multiprocessing.pool import ThreadPool
-import multiprocessing
-import pickle
-import socket
-import datetime
 from API import FaceRecAPI
-from . models import Log, Person
-
-
 
 
 stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
@@ -82,16 +67,6 @@ def stream_server():
 facerecognition_thread = threading.Thread(target=facerecognition)
 
 
-# @login_required(login_url='/accounts/login')
-# def release_cap(request):
-#     if facerecognition_thread.isAlive():
-#         x.cap.release()
-#         message = "Video capture released"
-#     else:
-#         message = "Face recognition is not running"
-#     return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
-
-
 @login_required(login_url='/accounts/login')
 def grab_cap(request):
     if facerecognition_thread.isAlive():
@@ -100,22 +75,6 @@ def grab_cap(request):
         message = "Video capture grabbed"
     else:
         message = "Face recognition is not running"
-    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
-
-
-@login_required(login_url='/accounts/login')
-def run_encodings(request):
-    x.load_files()
-    x.known_subjects_descriptors()
-    x.load_files()
-    message = "encoding done"
-    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
-
-
-@login_required(login_url='/accounts/login')
-def load_files(request):
-    x.load_files()
-    message = "files have been loaded"
     return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
 
 

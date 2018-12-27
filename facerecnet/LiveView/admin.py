@@ -1,7 +1,8 @@
 from django.contrib import admin
 from LiveView.models import Person, Log
 from django.utils.safestring import mark_safe
-from django.template.response import TemplateResponse
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 from django.urls import path
 from LiveView.views import x
 from django.http import HttpResponseRedirect
@@ -33,6 +34,8 @@ class PersonAdmin(admin.ModelAdmin):
     fields = ['name', 'authorized', 'file']
     list_display = ['name', 'authorized', 'image_tag']
     change_list_template = "LiveView/change_list.html"
+
+
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -41,6 +44,7 @@ class PersonAdmin(admin.ModelAdmin):
         ]
         return my_urls + urls
 
+    @method_decorator(login_required(login_url='/admin/login'))
     def run_encodings(self, request):
         x.load_files()
         x.known_subjects_descriptors()
@@ -48,6 +52,7 @@ class PersonAdmin(admin.ModelAdmin):
         self.message_user(request, "encodings done!")
         return HttpResponseRedirect("../")
 
+    @method_decorator(login_required(login_url='/admin/login'))
     def load_files(self, request):
         x.load_files()
         self.message_user(request, "files loaded!")
@@ -60,8 +65,10 @@ class PersonAdmin(admin.ModelAdmin):
         )
     )
 
-    image_tag.short_description = 'Image'
 
+
+    image_tag.short_description = 'Image'
 admin.site.register(Log, LogAdmin)
 admin.site.register(Person, PersonAdmin)
+admin.site.site_header = "Smart Gate Administration"
 

@@ -143,7 +143,8 @@ class FaceRecognition:
                 descriptors.append(np.array(self.facerec_model.compute_face_descriptor(img, landmarks)))
             else:
                 print("No face in picture {}".format(full_path))
-                os.remove(full_path)
+                database.Person.objects.filter(name=self.names[i]).delete()
+                print("record deleted from database")
 
         with open('descriptors.pkl', 'wb') as outfile:
             pickle.dump(descriptors, outfile, pickle.HIGHEST_PROTOCOL)
