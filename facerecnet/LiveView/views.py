@@ -9,10 +9,6 @@ from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
 
 
-# stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
-# stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
-# stream3 = "http://192.168.1.241:8080/video"
-
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
           working_file + "dlib_face_recognition_resnet_model_v1.dat",
@@ -81,4 +77,4 @@ def index(request):
         message = "Face recognition has been started"
     else:
         message = "Face recognition is already running."
-    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
+    return HttpResponseRedirect(render(request, 'LiveView/results.html', {"message": message}))

@@ -28,7 +28,21 @@ class Log(models.Model):
         verbose_name_plural = "logs"
 
 class Setting(models.Model):
-    device = models.CharField(max_length=255)
+    stream1 = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
+    stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
+    stream3 = "http://192.168.1.241:8080/video"
+    DEVICE_CHOICES = (
+        (stream1, 'Hikvision camera'),
+        (stream2, 'Gate camera'),
+        (stream3, 'Mobile phone camera'),
+    )
+
+    device = models.CharField(
+        max_length=255,
+        choices=DEVICE_CHOICES,
+        default=stream2
+    )
+
     crop0 = '1'
     crop1 = '0.75'
     crop2 = '0.5'

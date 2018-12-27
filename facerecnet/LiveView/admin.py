@@ -107,3 +107,4 @@ admin.site.register(Log, LogAdmin)
 admin.site.register(Setting, SettingAdmin)
 admin.site.site_header = "Smart Gate Administration"
 
+
