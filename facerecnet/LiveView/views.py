@@ -2,6 +2,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.http import StreamingHttpResponse, HttpResponseServerError
+from django.contrib import admin
 import cv2
 import threading
 from queue import Queue
@@ -24,19 +25,20 @@ frameQ = Queue(maxsize=5)
 
 
 def startrecognition():
-    if arduino_thread.isAlive() is False:
-        arduino_thread.daemon = True
-        arduino_thread.start()
-    if stream_thread.isAlive() is False:
-        stream_thread.daemon = True
-        stream_thread.start()
+    if facerecognition_thread.is_alive() is False:
+        facerecognition_thread.start()
 
 
 def facerecognition():
     print("face recognition is starting up")
     if x.cap is None:
         x.grab_cap()
-    startrecognition()
+    if arduino_thread.is_alive() is False:
+        arduino_thread.daemon = True
+        arduino_thread.start()
+    if stream_thread.is_alive() is False:
+        stream_thread.daemon = True
+        stream_thread.start()
     print("Face Recognition is running")
     while True:
         process = process_pool.apply_async(x.process)
@@ -77,4 +79,5 @@ def index(request):
         message = "Face recognition has been started"
     else:
         message = "Face recognition is already running."
-    return HttpResponseRedirect(render(request, 'LiveView/results.html', {"message": message}))
+    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+    return HttpResponseRedirect("../admin")

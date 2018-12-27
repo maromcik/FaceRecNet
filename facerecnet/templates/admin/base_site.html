@@ -7,8 +7,8 @@
 {% endblock %}
 
 {% block userlinks %}
-    <a href="{% url 'LiveView:'' %}">Run</a> /
-    <a href="{% url 'LiveView:stream %}">Open stream</a> /
+    <a href="{% url 'LiveView:index' %}">Run</a> /
+    <a href="{% url 'LiveView:stream' %}">Open stream</a> /
     {% if site_url %}
         <a href="{{ site_url }}">View site</a> /
     {% endif %}
