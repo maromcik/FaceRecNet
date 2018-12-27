@@ -15,8 +15,9 @@ from django.utils import timezone
 
 
 class FaceRecognition:
-    def __init__(self, models_paths, device, resize_factor):
-        self.device = device
+    def __init__(self, models_paths):
+        self.device = database.Setting.objects.get(pk=1).device
+        self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
         self.models = models_paths
         self.dir = os.path.join(os.path.dirname(__file__), "..")
         self.cap = None
@@ -30,7 +31,6 @@ class FaceRecognition:
         self.authorized = []
         self.total_unknown = 0
 
-        self.resize_factor = resize_factor
         self.blink_frame_count = 0
         self.frame_count = 0
 
@@ -93,10 +93,13 @@ class FaceRecognition:
 
 
     def grab_cap(self):
+        self.device = database.Setting.objects.get(pk=1).device
         self.cap = cv2.VideoCapture(self.device)
 
 
     def load_files(self):
+        self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
+        print("crop factor has been loaded")
         self.persons = database.Person.objects.all()
         self.pks = list(self.persons.values_list('id', flat=True))
         print("primary keys have been loaded")

@@ -1,10 +1,10 @@
 from django.contrib import admin
-from LiveView.models import Person, Log
+from LiveView.models import Person, Log, Setting
 from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.urls import path
-from LiveView.views import x
+from LiveView import views
 from django.http import HttpResponseRedirect
 
 
@@ -44,16 +44,16 @@ class PersonAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def run_encodings(self, request):
-        x.load_files()
-        x.known_subjects_descriptors()
-        x.load_files()
-        self.message_user(request, "encodings done!")
+        views.x.load_files()
+        views.x.known_subjects_descriptors()
+        views.x.load_files()
+        self.message_user(request, "Encodings done!")
         return HttpResponseRedirect("../")
 
     @method_decorator(login_required(login_url='/admin/login'))
     def load_files(self, request):
-        x.load_files()
-        self.message_user(request, "files loaded!")
+        views.x.load_files()
+        self.message_user(request, "Files loaded!")
         return HttpResponseRedirect("../")
 
     def image_tag(self, obj):
@@ -65,8 +65,39 @@ class PersonAdmin(admin.ModelAdmin):
 
     image_tag.short_description = 'Image'
 
+class SettingAdmin(admin.ModelAdmin):
+    list_display = ['device', 'crop']
+    change_list_template = "LiveView/change_list2.html"
 
-admin.site.register(Log, LogAdmin)
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('grab/', self.grab_cap),
+            path('load/', self.load_files),
+        ]
+        return my_urls + urls
+
+    @method_decorator(login_required(login_url='/admin/login'))
+    def load_files(self, request):
+        views.x.load_files()
+        self.message_user(request, "Files loaded!")
+        return HttpResponseRedirect("../")
+
+
+    @method_decorator(login_required(login_url='/admin/login'))
+    def grab_cap(self, request):
+        if views.facerecognition_thread.isAlive():
+            views.x.grab_cap()
+            views.startrecognition()
+            self.message_user(request, "Capture grabbed!")
+            return HttpResponseRedirect("../")
+        else:
+            self.message_user(request, "Face recognition is not running!")
+            return HttpResponseRedirect("../")
+
+
 admin.site.register(Person, PersonAdmin)
+admin.site.register(Log, LogAdmin)
+admin.site.register(Setting, SettingAdmin)
 admin.site.site_header = "Smart Gate Administration"
 

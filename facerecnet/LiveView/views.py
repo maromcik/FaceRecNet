@@ -9,18 +9,15 @@ from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
 
 
-stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
-stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
-stream3 = "http://192.168.1.241:8080/video"
-stream4 = "http://192.168.137.202:8080/video"
+# stream = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
+# stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
+# stream3 = "http://192.168.1.241:8080/video"
+
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
           working_file + "dlib_face_recognition_resnet_model_v1.dat",
           working_file + "shape_predictor_68_face_landmarks.dat"]
-dir = "/home/user/PycharmProjects/resource/subjects"
-rebs = "/home/user/PycharmProjects/resource/rebs2.mp4"
-
-x = FaceRecAPI.FaceRecognition(models, stream3, 0.25)
+x = FaceRecAPI.FaceRecognition(models)
 x.load_files()
 stream_thread = threading.Thread(target=x.read_stream)
 arduino_thread = threading.Thread(target=x.arduino_server)
@@ -65,17 +62,6 @@ def stream_server():
         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
 facerecognition_thread = threading.Thread(target=facerecognition)
-
-
-@login_required(login_url='/accounts/login')
-def grab_cap(request):
-    if facerecognition_thread.isAlive():
-        x.grab_cap()
-        startrecognition()
-        message = "Video capture grabbed"
-    else:
-        message = "Face recognition is not running"
-    return HttpResponse(render(request, 'LiveView/results.html', {"message": message}))
 
 
 @login_required(login_url='/accounts/login')
