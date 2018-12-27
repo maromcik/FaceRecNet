@@ -182,14 +182,14 @@ class FaceRecognition:
             if frame is not None:
                 if this_frame:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    frame = self.resize_img(frame, fx=self.resize_factor, fy=self.resize_factor)
                     self.frameQ.put(frame)
                 this_frame = not this_frame
 
 
     def process(self):
         labels = []
-        frame = self.frameQ.get()
+        image = self.frameQ.get()
+        frame = self.resize_img(image, fx=self.resize_factor, fy=self.resize_factor)
         faces = self.detect(frame)
         if faces is not None:
             landmarks = self.find_landmarks(frame, faces)
@@ -213,8 +213,9 @@ class FaceRecognition:
 
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         # self.outputQ.put(frame)
-        # cv2.imshow("SmartGate", frame)
+        # cv2.imshow("SmartGate", image)
         # cv2.waitKey(1)
         self.frameQ.task_done()
         return labels, frame  #return original image as well

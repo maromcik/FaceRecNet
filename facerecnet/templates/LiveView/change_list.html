@@ -2,15 +2,22 @@
 
 {% block object-tools %}
     <div>
-        <form action="load/" method="POST">
-            {% csrf_token %}
-                <button type="submit">load files</button>
-        </form>
-        <form action="encoding/" method="POST">
-            {% csrf_token %}
-                <button type="submit">run encodings</button>
-        </form>
+        <ul class="object-tools">
+          <li>
+            <a href="load/" class="button">
+              Load files
+            </a>
+          </li>
+        </ul>
+        <br></br>
+        <ul class="object-tools">
+          <li>
+            <a href="encoding/" class="button">
+              Run encodings
+            </a>
+          </li>
+        </ul>
+        <br></br>
     </div>
-    <br />
     {{ block.super }}
 {% endblock %}

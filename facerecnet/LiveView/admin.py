@@ -26,15 +26,13 @@ class LogAdmin(admin.ModelAdmin):
     image_tag.short_description = 'Image'
 
 
-
 class PersonAdmin(admin.ModelAdmin):
-
     list_filter = ['authorized']
     search_fields = ['name']
     fields = ['name', 'authorized', 'file']
     list_display = ['name', 'authorized', 'image_tag']
     change_list_template = "LiveView/change_list.html"
-
+    # change_form_template = 'LiveView/change_form.html'
 
     def get_urls(self):
         urls = super().get_urls()
@@ -65,9 +63,9 @@ class PersonAdmin(admin.ModelAdmin):
         )
     )
 
-
-
     image_tag.short_description = 'Image'
+
+
 admin.site.register(Log, LogAdmin)
 admin.site.register(Person, PersonAdmin)
 admin.site.site_header = "Smart Gate Administration"

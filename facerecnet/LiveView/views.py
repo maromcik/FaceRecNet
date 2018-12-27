@@ -47,13 +47,13 @@ def facerecognition():
     print("Face Recognition is running")
     while True:
         process = process_pool.apply_async(x.process)
-        labels, image = process.get()
-        access = access_pool.apply_async(x.access, args=(labels,image))
-        cv2.imshow("live", image)
+        labels, frame = process.get()
+        access = access_pool.apply_async(x.access, args=(labels, frame))
+        cv2.imshow("live", frame)
         cv2.waitKey(1)
         if frameQ.full():
             continue
-        frameQ.put(image)
+        frameQ.put(frame)
 
 def stream_server():
 
