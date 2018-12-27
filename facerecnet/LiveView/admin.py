@@ -13,6 +13,9 @@ class LogAdmin(admin.ModelAdmin):
     list_filter = ['person', 'time', 'granted']
     search_fields = ['person__name']
 
+    def has_add_permission(self, request, obj=None):
+        return False
+
     def image_tag(self, obj):
         try:
             return mark_safe('<img src="{url}" height={height} />'.format(
@@ -68,6 +71,9 @@ class PersonAdmin(admin.ModelAdmin):
 class SettingAdmin(admin.ModelAdmin):
     list_display = ['device', 'crop']
     change_list_template = "LiveView/change_list2.html"
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
     def get_urls(self):
         urls = super().get_urls()
