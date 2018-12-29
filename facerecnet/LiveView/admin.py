@@ -85,7 +85,7 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def load_files(self, request):
-        views.x.load_files()
+        views.rec_threads.rec.load_files()
         self.message_user(request, "Files loaded!")
         return HttpResponseRedirect("../")
 
