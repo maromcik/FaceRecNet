@@ -23,7 +23,12 @@ frameQ = Queue(maxsize=5)
 
 class RecognitionThreads:
 
+    def __init__(self):
+        self.rec = FaceRecAPI.FaceRecognition(models)
+        self.rec.load_files()
+
     def startrecognition(self):
+
         try:
             if self.facerecognition_thread.isAlive():
                 return True
@@ -38,8 +43,6 @@ class RecognitionThreads:
                 self.facerecognition_thread.start()
                 return False
         except AttributeError:
-            self.rec = FaceRecAPI.FaceRecognition(models)
-            self.rec.load_files()
             self.stream_thread = StreamThread()
             self.arduino_thread = ArduinoThread()
             self.process_pool = ThreadPool(processes=1)
