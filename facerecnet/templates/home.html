@@ -5,18 +5,33 @@
 {% block content %}
 {% if user.is_authenticated %}
   Hi {{ user.username }}!
-
-  <form action="LiveView" method="GET">
+<br>
+  {{message}}
+</br>
+  <form action="LiveView/start" method="GET">
   {{ form.as_p }}
-  <button type="submit">run</button>
+  <button type="submit">start</button>
+</form>
+
+  <form action="LiveView/stop" method="GET">
+  {{ form.as_p }}
+  <button type="submit">stop</button>
 </form>
 
   <form action="LiveView/stream" method="GET">
   {{ form.as_p }}
-  <button type="submit">run and open stream</button>
+  <button type="submit">start and open stream</button>
 </form>
 
+  <form action="LiveView/open" method="GET">
+  {{ form.as_p }}
+  <button type="submit">open gate</button>
+</form>
 
+  <form action="admin" method="GET">
+  {{ form.as_p }}
+  <button type="submit">ADMIN</button>
+</form>
 
 
 {% else %}

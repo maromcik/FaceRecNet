@@ -92,14 +92,18 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def grab_cap(self, request):
-        if views.rec_threads.facerecognition_thread.isAlive():
-            views.rec_threads.rec.load_files()
-            # views.x.release_cap()
-            views.rec_threads.rec.grab_cap()
-            views.rec_threads.startrecognition()
-            self.message_user(request, "Capture grabbed!")
-            return HttpResponseRedirect("../")
-        else:
+        try:
+            if views.rec_threads.facerecognition_thread.isAlive():
+                views.rec_threads.rec.load_files()
+                # views.x.release_cap()
+                views.rec_threads.rec.grab_cap()
+                views.rec_threads.startrecognition()
+                self.message_user(request, "Capture grabbed!")
+                return HttpResponseRedirect("../")
+            else:
+                self.message_user(request, "Face recognition is not running!")
+                return HttpResponseRedirect("../")
+        except AttributeError:
             self.message_user(request, "Face recognition is not running!")
             return HttpResponseRedirect("../")
 

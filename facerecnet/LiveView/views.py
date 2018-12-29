@@ -8,8 +8,6 @@ import threading
 from queue import Queue
 from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
-import gc
-
 
 
 working_file = "/home/user/Documents/dlib/models/"
@@ -51,6 +49,7 @@ class RecognitionThreads:
             self.facerecognition_thread = FaceRecognitionThread()
             self.facerecognition_thread.start()
             return False
+
 
 rec_threads = RecognitionThreads()
 
@@ -100,7 +99,6 @@ class StreamThread(threading.Thread):
         return self._stop_event.is_set()
 
 
-
 def facerecognition():
     print("face recognition is starting up")
     try:
@@ -144,7 +142,6 @@ def facerecognition():
     return
 
 
-
 def stream_server():
 
     while True:
@@ -166,6 +163,11 @@ def stream(request):
 
 @login_required(login_url='/accounts/login')
 def index(request):
+    return HttpResponse(render(request, 'LiveView/LiveView.html'))
+
+
+@login_required(login_url='/accounts/login')
+def startAdmin(request):
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
     else:
@@ -175,8 +177,63 @@ def index(request):
 
 
 @login_required(login_url='/accounts/login')
-def stop_recognition(request):
-    rec_threads.facerecognition_thread.stop()
-    message = "Face recognition has been stopped"
+def start(request):
+    if rec_threads.startrecognition():
+        message = "Face recognition is already running."
+    else:
+        message = "Face has been started!"
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message}))
+
+
+@login_required(login_url='/accounts/login')
+def stopAdmin(request):
+    try:
+        if rec_threads.facerecognition_thread.isAlive():
+            rec_threads.facerecognition_thread.stop()
+            message = "Face recognition has been stopped"
+        else:
+            message = "Face recognition is not running!"
+    except AttributeError:
+        message = "Face recognition is not running!"
     admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
     return HttpResponseRedirect("../admin")
+
+
+@login_required(login_url='/accounts/login')
+def stop(request):
+    try:
+        if rec_threads.facerecognition_thread.isAlive():
+            rec_threads.facerecognition_thread.stop()
+            message = "Face recognition has been stopped"
+        else:
+            message = "Face recognition is not running!"
+    except AttributeError:
+        message = "Face recognition is not running!"
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message}))
+
+
+@login_required(login_url='/accounts/login')
+def openAdmin(request):
+    try:
+        if rec_threads.facerecognition_thread.isAlive():
+            rec_threads.rec.arduino_open()
+            message = "Gate opened!"
+        else:
+            message = "Face recognition is not running!"
+    except AttributeError:
+        message = "Face recognition is not running!"
+    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+    return HttpResponseRedirect("../admin")
+
+
+@login_required(login_url='/accounts/login')
+def open(request):
+    try:
+        if rec_threads.facerecognition_thread.isAlive():
+            rec_threads.rec.arduino_open()
+            message = "Gate opened!"
+        else:
+            message = "Face recognition is not running!"
+    except AttributeError:
+        message = "Face recognition is not running!"
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message}))
