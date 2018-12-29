@@ -7,4 +7,5 @@ app_name = 'LiveView'
 urlpatterns = [
     path('', views.index, name='index'),
     path('stream', views.stream, name='stream'),
+    path('stop', views.stop, name='stop'),
 ]

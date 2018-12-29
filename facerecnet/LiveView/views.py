@@ -31,8 +31,11 @@ def startrecognition():
 
 def facerecognition():
     print("face recognition is starting up")
-    if x.cap is None:
+    try:
+        x.cap
+    except AttributeError:
         x.grab_cap()
+
     if arduino_thread.is_alive() is False:
         arduino_thread.daemon = True
         arduino_thread.start()

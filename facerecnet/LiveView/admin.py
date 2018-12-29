@@ -92,7 +92,9 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def grab_cap(self, request):
-        if views.facerecognition_thread.isAlive():
+        if views.fr_thread.isAlive():
+            views.x.load_files()
+            # views.x.release_cap()
             views.x.grab_cap()
             views.startrecognition()
             self.message_user(request, "Capture grabbed!")

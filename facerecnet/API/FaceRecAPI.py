@@ -20,7 +20,6 @@ class FaceRecognition:
         self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
         self.models = models_paths
         self.dir = os.path.join(os.path.dirname(__file__), "..")
-        self.cap = None
 
         self.frameQ = Queue()
         self.outputQ = Queue()
@@ -65,6 +64,7 @@ class FaceRecognition:
         print("images have been loaded")
 
 
+
     def draw(self, img, rect):
         (x, y, w, h) = rect
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
@@ -92,12 +92,18 @@ class FaceRecognition:
         return img
 
 
+    def release_cap(self):
+        self.cap.release()
+
+
     def grab_cap(self):
         self.device = database.Setting.objects.get(pk=1).device
         self.cap = cv2.VideoCapture(self.device)
 
 
     def load_files(self):
+        self.device = database.Setting.objects.get(pk=1).device
+        print("Device has been loaded")
         self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
         print("crop factor has been loaded")
         self.persons = database.Person.objects.all()
@@ -181,7 +187,10 @@ class FaceRecognition:
     def read_stream(self):
         this_frame = True
         while True:
-            ret, frame = self.cap.read()
+            try:
+                ret, frame = self.cap.read()
+            except:
+                print("som kokot a robim picoviny")
             if frame is not None:
                 if this_frame:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
