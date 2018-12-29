@@ -47,9 +47,9 @@ class PersonAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def run_encodings(self, request):
-        views.x.load_files()
-        views.x.known_subjects_descriptors()
-        views.x.load_files()
+        views.rc.x.load_files()
+        views.rc.x.known_subjects_descriptors()
+        views.rc.x.load_files()
         self.message_user(request, "Encodings done!")
         return HttpResponseRedirect("../")
 
@@ -92,11 +92,11 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def grab_cap(self, request):
-        if views.fr_thread.isAlive():
-            views.x.load_files()
+        if views.rc.fr_thread.isAlive():
+            views.rc.x.load_files()
             # views.x.release_cap()
-            views.x.grab_cap()
-            views.startrecognition()
+            views.rc.x.grab_cap()
+            views.rc.startrecognition()
             self.message_user(request, "Capture grabbed!")
             return HttpResponseRedirect("../")
         else:

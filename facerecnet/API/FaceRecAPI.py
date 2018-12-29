@@ -12,6 +12,7 @@ import string
 import secrets
 import LiveView.models as database
 from django.utils import timezone
+from LiveView import views
 
 
 class FaceRecognition:
@@ -22,7 +23,6 @@ class FaceRecognition:
         self.dir = os.path.join(os.path.dirname(__file__), "..")
 
         self.frameQ = Queue()
-        self.outputQ = Queue()
         self.resize_lock = threading.Lock()
 
         self.descriptors = []
@@ -45,7 +45,7 @@ class FaceRecognition:
         self.facerec_model = dlib.face_recognition_model_v1(self.models[1])
 
         self.arduino_server_pool = ThreadPool(processes=1)
-        self.arduino_server_pool2 = ThreadPool(processes=1)
+        # self.arduino_server_pool2 = ThreadPool(processes=1)
 
         self.host = ""
         self.port1 = 13081
@@ -187,15 +187,17 @@ class FaceRecognition:
     def read_stream(self):
         this_frame = True
         while True:
-            try:
-                ret, frame = self.cap.read()
-            except:
-                print("som kokot a robim picoviny")
+            if views.rc.stream_thread.stopped():
+                print("stream killed")
+                self.frameQ.task_done()
+                break
+            ret, frame = self.cap.read()
             if frame is not None:
                 if this_frame:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     self.frameQ.put(frame)
                 this_frame = not this_frame
+        return
 
 
     def process(self):
@@ -229,7 +231,6 @@ class FaceRecognition:
         # self.outputQ.put(frame)
         # cv2.imshow("SmartGate", image)
         # cv2.waitKey(1)
-        self.frameQ.task_done()
         return labels, frame  #return original image as well
 
 
@@ -260,7 +261,6 @@ class FaceRecognition:
 
 
     def access(self, labels, image):
-        self.arduino_server_pool2.apply_async(self.arduino_ring)
         if self.ring:
             print("ring in access")
             self.ring = False
@@ -276,7 +276,7 @@ class FaceRecognition:
                         text = ''.join(secrets.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(20))
                         fullpath = self.dir+"/media/snapshots/"+text+".jpg"
                         djangopath = "snapshots/"+text+".jpg"
-                        if(cv2.imwrite(fullpath, image)):
+                        if cv2.imwrite(fullpath, image):
                             print("snap saved")
                         self.unknown_count = 0
                         self.empty_count1 = 0
@@ -315,12 +315,12 @@ class FaceRecognition:
             pass
         print("done")
 
-
-    def arduino_ring(self):
-        data = self.c.recv(7).decode("utf-8")
-        print(data)
-        if data.strip("\r\n") == "ringing":
-            self.ring = True
+    #
+    # def arduino_ring(self):
+    #     data = self.c.recv(7).decode("utf-8")
+    #     print(data)
+    #     if data.strip("\r\n") == "ringing":
+    #         self.ring = True
 
 
     def arduino_server(self):
@@ -330,4 +330,13 @@ class FaceRecognition:
         self.s.listen(1)
         self.c, addr = self.s.accept()
         print(addr, " connected")
+        while True:
+            time.sleep(1)
+            if views.rc.arduino_thread.stopped():
+                self.s.close()
+                self.c.close()
+                print("arduino killed")
+                break
+
+
 
