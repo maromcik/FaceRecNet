@@ -8,6 +8,7 @@ import threading
 from queue import Queue
 from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
+import gc
 
 
 
@@ -71,7 +72,7 @@ class FaceRecognitionThread(threading.Thread):
 
 class ArduinoThread(threading.Thread):
     def __init__(self):
-        super(ArduinoThread, self).__init__(target=rec_threads.rec.arduino_server, name="ArduinoThread", daemon=True)
+        super(ArduinoThread, self).__init__(target=rec_threads.rec.arduino_server, name="ArduinoThread")
         self._stop_event = threading.Event()
 
     def destop(self):
@@ -86,7 +87,7 @@ class ArduinoThread(threading.Thread):
 
 class StreamThread(threading.Thread):
     def __init__(self):
-        super(StreamThread, self).__init__(target=rec_threads.rec.read_stream, name="StreamThread", daemon=True)
+        super(StreamThread, self).__init__(target=rec_threads.rec.read_stream, name="StreamThread")
         self._stop_event = threading.Event()
 
     def destop(self):
@@ -107,8 +108,6 @@ def facerecognition():
     except AttributeError:
         rec_threads.rec.grab_cap()
 
-    rec_threads.arduino_thread.daemon = True
-    rec_threads.stream_thread.daemon = True
     rec_threads.stream_thread.start()
     rec_threads.arduino_thread.start()
     print("Face Recognition is running")
@@ -127,7 +126,6 @@ def facerecognition():
             rec_threads.access_pool.join()
             rec_threads.rec.arduino_server_pool.terminate()
             rec_threads.rec.arduino_server_pool.join()
-
             print("all killed")
             break
         process = rec_threads.process_pool.apply_async(rec_threads.rec.process)
