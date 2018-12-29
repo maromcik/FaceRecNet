@@ -21,34 +21,34 @@ stream_server_pool = ThreadPool(processes=1)
 frameQ = Queue(maxsize=5)
 
 
-class Recognition:
+class RecognitionThreads:
 
     def startrecognition(self):
         try:
-            if self.fr_thread.isAlive():
+            if self.facerecognition_thread.isAlive():
                 return True
             else:
-                self.x = FaceRecAPI.FaceRecognition(models)
-                self.x.load_files()
+                self.rec = FaceRecAPI.FaceRecognition(models)
+                self.rec.load_files()
                 self.stream_thread = StreamThread()
                 self.arduino_thread = ArduinoThread()
                 self.process_pool = ThreadPool(processes=1)
                 self.access_pool = ThreadPool(processes=1)
-                self.fr_thread = FaceRecognitionThread()
-                self.fr_thread.start()
+                self.facerecognition_thread = FaceRecognitionThread()
+                self.facerecognition_thread.start()
                 return False
         except AttributeError:
-            self.x = FaceRecAPI.FaceRecognition(models)
-            self.x.load_files()
+            self.rec = FaceRecAPI.FaceRecognition(models)
+            self.rec.load_files()
             self.stream_thread = StreamThread()
             self.arduino_thread = ArduinoThread()
             self.process_pool = ThreadPool(processes=1)
             self.access_pool = ThreadPool(processes=1)
-            self.fr_thread = FaceRecognitionThread()
-            self.fr_thread.start()
+            self.facerecognition_thread = FaceRecognitionThread()
+            self.facerecognition_thread.start()
             return False
 
-rc = Recognition()
+rec_threads = RecognitionThreads()
 
 
 class FaceRecognitionThread(threading.Thread):
@@ -68,7 +68,7 @@ class FaceRecognitionThread(threading.Thread):
 
 class ArduinoThread(threading.Thread):
     def __init__(self):
-        super(ArduinoThread, self).__init__(target=rc.x.arduino_server, name="ArduinoThread", daemon=True)
+        super(ArduinoThread, self).__init__(target=rec_threads.rec.arduino_server, name="ArduinoThread", daemon=True)
         self._stop_event = threading.Event()
 
     def destop(self):
@@ -83,7 +83,7 @@ class ArduinoThread(threading.Thread):
 
 class StreamThread(threading.Thread):
     def __init__(self):
-        super(StreamThread, self).__init__(target=rc.x.read_stream, name="StreamThread", daemon=True)
+        super(StreamThread, self).__init__(target=rec_threads.rec.read_stream, name="StreamThread", daemon=True)
         self._stop_event = threading.Event()
 
     def destop(self):
@@ -100,45 +100,45 @@ class StreamThread(threading.Thread):
 def facerecognition():
     print("face recognition is starting up")
     try:
-        rc.x.cap
+        rec_threads.rec.cap
     except AttributeError:
-        rc.x.grab_cap()
+        rec_threads.rec.grab_cap()
 
-    rc.arduino_thread.daemon = True
-    rc.stream_thread.daemon = True
-    rc.stream_thread.start()
-    rc.arduino_thread.start()
+    rec_threads.arduino_thread.daemon = True
+    rec_threads.stream_thread.daemon = True
+    rec_threads.stream_thread.start()
+    rec_threads.arduino_thread.start()
     print("Face Recognition is running")
     while True:
-        if rc.fr_thread.stopped():
-            rc.arduino_thread.stop()
-            rc.stream_thread.stop()
-            rc.process_pool.terminate()
-            rc.access_pool.terminate()
+        if rec_threads.facerecognition_thread.stopped():
+            rec_threads.arduino_thread.stop()
+            rec_threads.stream_thread.stop()
+            rec_threads.process_pool.terminate()
+            rec_threads.access_pool.terminate()
             stream_server_pool.terminate()
             frameQ.task_done()
-            rc.arduino_thread.join()
-            rc.stream_thread.join()
-            rc.process_pool.join()
+            rec_threads.arduino_thread.join()
+            rec_threads.stream_thread.join()
+            rec_threads.process_pool.join()
             stream_server_pool.join()
-            rc.access_pool.join()
-            rc.x.arduino_server_pool.terminate()
-            rc.x.arduino_server_pool.join()
+            rec_threads.access_pool.join()
+            rec_threads.rec.arduino_server_pool.terminate()
+            rec_threads.rec.arduino_server_pool.join()
 
             print("all killed")
             break
-        process = rc.process_pool.apply_async(rc.x.process)
+        process = rec_threads.process_pool.apply_async(rec_threads.rec.process)
         labels, frame = process.get()
-        access = rc.access_pool.apply_async(rc.x.access, args=(labels, frame))
+        access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, frame))
         # cv2.imshow("test", frame)
         # cv2.waitKey(1)
         if frameQ.full():
             continue
         frameQ.put(frame)
-    rc.arduino_thread.destop()
-    rc.stream_thread.destop()
-    rc.fr_thread.destop()
-    rc.x.cap.release()
+    rec_threads.arduino_thread.destop()
+    rec_threads.stream_thread.destop()
+    rec_threads.facerecognition_thread.destop()
+    rec_threads.rec.cap.release()
     cv2.destroyAllWindows()
     return
 
@@ -157,7 +157,7 @@ def stream_server():
 @login_required(login_url='/accounts/login')
 def stream(request):
     try:
-        rc.startrecognition()
+        rec_threads.startrecognition()
         return StreamingHttpResponse(stream_server(), content_type="multipart/x-mixed-replace;boundary=frame")
     except HttpResponseServerError as e:
         print("aborted")
@@ -165,7 +165,7 @@ def stream(request):
 
 @login_required(login_url='/accounts/login')
 def index(request):
-    if rc.startrecognition():
+    if rec_threads.startrecognition():
         message = "Face recognition is already running."
     else:
         message = "Face recognition has been started"
@@ -175,7 +175,7 @@ def index(request):
 
 @login_required(login_url='/accounts/login')
 def stop_recognition(request):
-    rc.fr_thread.stop()
+    rec_threads.facerecognition_thread.stop()
     message = "Face recognition has been stopped"
     admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
     return HttpResponseRedirect("../admin")

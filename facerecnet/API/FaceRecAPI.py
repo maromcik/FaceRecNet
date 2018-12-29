@@ -187,7 +187,7 @@ class FaceRecognition:
     def read_stream(self):
         this_frame = True
         while True:
-            if views.rc.stream_thread.stopped():
+            if views.rec_threads.stream_thread.stopped():
                 print("stream killed")
                 self.frameQ.task_done()
                 break
@@ -332,7 +332,7 @@ class FaceRecognition:
         print(addr, " connected")
         while True:
             time.sleep(1)
-            if views.rc.arduino_thread.stopped():
+            if views.rec_threads.arduino_thread.stopped():
                 self.s.close()
                 self.c.close()
                 print("arduino killed")

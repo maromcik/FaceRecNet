@@ -47,15 +47,15 @@ class PersonAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def run_encodings(self, request):
-        views.rc.x.load_files()
-        views.rc.x.known_subjects_descriptors()
-        views.rc.x.load_files()
+        views.rec_threads.rec.load_files()
+        views.rec_threads.rec.known_subjects_descriptors()
+        views.rec_threads.rec.load_files()
         self.message_user(request, "Encodings done!")
         return HttpResponseRedirect("../")
 
     @method_decorator(login_required(login_url='/admin/login'))
     def load_files(self, request):
-        views.x.load_files()
+        views.rec_threads.rec.load_files()
         self.message_user(request, "Files loaded!")
         return HttpResponseRedirect("../")
 
@@ -92,11 +92,11 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def grab_cap(self, request):
-        if views.rc.fr_thread.isAlive():
-            views.rc.x.load_files()
+        if views.rec_threads.facerecognition_thread.isAlive():
+            views.rec_threads.rec.load_files()
             # views.x.release_cap()
-            views.rc.x.grab_cap()
-            views.rc.startrecognition()
+            views.rec_threads.rec.grab_cap()
+            views.rec_threads.startrecognition()
             self.message_user(request, "Capture grabbed!")
             return HttpResponseRedirect("../")
         else:
