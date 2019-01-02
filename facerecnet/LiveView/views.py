@@ -150,8 +150,7 @@ def stream_server():
         image = frameQ.get()
         ret, jpeg = cv2.imencode('.jpg', image)
         frame = jpeg.tobytes()
-        yield (b'--frame\r\n'
-        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+        yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
 
 @login_required(login_url='/accounts/login')
@@ -170,7 +169,6 @@ def index(request):
 
 @login_required(login_url='/accounts/login')
 def startAdmin(request):
-    print(request)
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
     else:
