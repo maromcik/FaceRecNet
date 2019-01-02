@@ -31,10 +31,12 @@ class Setting(models.Model):
     stream1 = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
     stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
     stream3 = "http://192.168.1.241:8080/video"
+    stream4 = "http://192.168.1.112:8080/video"
     DEVICE_CHOICES = (
         (stream1, 'Hikvision camera'),
         (stream2, 'Gate camera'),
-        (stream3, 'Mobile phone camera'),
+        (stream3, 'S7 Edge camera'),
+        (stream4, 'A5 camera'),
     )
 
     device = models.CharField(

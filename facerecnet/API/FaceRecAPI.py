@@ -10,15 +10,18 @@ import pickle
 import socket
 import string
 import secrets
+import select
 import LiveView.models as database
 from django.utils import timezone
 from LiveView import views
 
 
+
 class FaceRecognition:
     def __init__(self, models_paths):
-        self.device = database.Setting.objects.get(pk=1).device
         self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
+        self.device = database.Setting.objects.get(pk=1).device
+        # self.device = "/home/user/PycharmProjects/resource/rebs2.mp4"
         self.models = models_paths
         self.dir = os.path.join(os.path.dirname(__file__), "..")
 
@@ -97,7 +100,9 @@ class FaceRecognition:
 
 
     def grab_cap(self):
+        self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
         self.device = database.Setting.objects.get(pk=1).device
+        # self.device = "/home/user/PycharmProjects/resource/rebs2.mp4"
         self.cap = cv2.VideoCapture(self.device)
 
 
@@ -260,10 +265,8 @@ class FaceRecognition:
             return label, False
 
 
+
     def access(self, labels, image):
-        if self.ring:
-            print("ring in access")
-            self.ring = False
         if not labels:
             self.empty_count1 += 1
             self.empty_count2 += 1
@@ -271,7 +274,7 @@ class FaceRecognition:
             for label in labels:
                 if label is None:
                     self.unknown_count += 1
-                    if (self.empty_count1 > 13) and self.unknown_count > 8:
+                    if (self.empty_count1 > 13) and self.unknown_count > 8 and self.ring is True:
                         print("unknown")
                         text = ''.join(secrets.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(20))
                         fullpath = self.dir+"/media/snapshots/"+text+".jpg"
@@ -283,6 +286,7 @@ class FaceRecognition:
                         log = database.Log.objects.create(person=None,time=timezone.now(), granted=False,
                                                           snapshot=djangopath)
                         log.save()
+                        self.ring = False
                 else:
                     if self.names[label[0]] in self.authorized:
                         if label[1] == True:
@@ -290,11 +294,7 @@ class FaceRecognition:
                                 self.trigtime = time.time()
                                 name = self.names[label[0]]
                                 print("access granted for: ", name)
-                                self.arduino_server_pool.apply_async(self.arduino_open)
-                                person = database.Person.objects.get(name=name)
-                                log = database.Log.objects.create(person=person, time=timezone.now(), granted=True,
-                                                                  snapshot=None)
-                                log.save()
+                                self.arduino_server_pool.apply_async(self.arduino_open, args=(name,))
                     else:
                         self.auth_count += 1
                         if (self.empty_count2 > 10) and self.auth_count > 5:
@@ -307,20 +307,30 @@ class FaceRecognition:
                             log.save()
 
 
-    def arduino_open(self):
-        command = "open"
-        self.c.send(command.encode("utf-8"))
-        data = self.c.recv(9).decode("utf-8")
-        if data.strip("\r\n") == "received":
-            pass
-        print("done")
 
-    #
-    # def arduino_ring(self):
-    #     data = self.c.recv(7).decode("utf-8")
-    #     print(data)
-    #     if data.strip("\r\n") == "ringing":
-    #         self.ring = True
+    def arduino_open(self, name):
+        command = "open"
+        try:
+            self.c.send(command.encode("utf-8"))
+            data = self.c.recv(9).decode("utf-8")
+            if data.strip("\r\n") == "received":
+                if name != "manual":
+                    person = database.Person.objects.get(name=name)
+                    log = database.Log.objects.create(person=person, time=timezone.now(), granted=True,
+                                                      snapshot=None)
+                    log.save()
+                print(data.strip("\r\n"))
+
+        except (BrokenPipeError, ConnectionResetError, ConnectionError, ConnectionAbortedError):
+            print("error")
+            self.c.close()
+            self.s.close()
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.s.bind((self.host, self.port1))
+            self.s.listen(1)
+            self.c, addr = self.s.accept()
+            print(addr, " reconnected")
 
 
     def arduino_server(self):
@@ -331,12 +341,22 @@ class FaceRecognition:
         self.c, addr = self.s.accept()
         print(addr, " connected")
         while True:
+            data = self.c.recv(7).decode("utf-8")
+            print(data)
+            if data.strip("\r\n") == "ringing":
+                self.ring = True
             time.sleep(1)
             if views.rec_threads.arduino_thread.stopped():
-                self.s.close()
+                self.c.shutdown(2)
                 self.c.close()
+                self.s.shutdown(2)
+                self.s.close()
                 print("arduino killed")
                 break
+
+
+
+
 
 
 

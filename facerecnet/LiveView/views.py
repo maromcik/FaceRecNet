@@ -9,15 +9,14 @@ from queue import Queue
 from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
 
-
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
           working_file + "dlib_face_recognition_resnet_model_v1.dat",
           working_file + "shape_predictor_68_face_landmarks.dat"]
 
 
-stream_server_pool = ThreadPool(processes=1)
 frameQ = Queue(maxsize=5)
+
 
 
 class RecognitionThreads:
@@ -98,6 +97,8 @@ class StreamThread(threading.Thread):
     def stopped(self):
         return self._stop_event.is_set()
 
+restarted = False
+
 
 def facerecognition():
     print("face recognition is starting up")
@@ -115,25 +116,27 @@ def facerecognition():
             rec_threads.stream_thread.stop()
             rec_threads.process_pool.terminate()
             rec_threads.access_pool.terminate()
-            stream_server_pool.terminate()
             frameQ.task_done()
             rec_threads.arduino_thread.join()
             rec_threads.stream_thread.join()
             rec_threads.process_pool.join()
-            stream_server_pool.join()
             rec_threads.access_pool.join()
             rec_threads.rec.arduino_server_pool.terminate()
             rec_threads.rec.arduino_server_pool.join()
+            global restarted
+            restarted = True
             print("all killed")
             break
         process = rec_threads.process_pool.apply_async(rec_threads.rec.process)
         labels, frame = process.get()
         access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, frame))
-        # cv2.imshow("test", frame)
-        # cv2.waitKey(1)
+        if restarted == False:
+            cv2.imshow("test", frame)
+            cv2.waitKey(1)
         if frameQ.full():
             continue
         frameQ.put(frame)
+
     rec_threads.arduino_thread.destop()
     rec_threads.stream_thread.destop()
     rec_threads.facerecognition_thread.destop()
@@ -143,7 +146,6 @@ def facerecognition():
 
 
 def stream_server():
-
     while True:
         image = frameQ.get()
         ret, jpeg = cv2.imencode('.jpg', image)
@@ -156,8 +158,8 @@ def stream_server():
 def stream(request):
     try:
         rec_threads.startrecognition()
-        return StreamingHttpResponse(stream_server(), content_type="multipart/x-mixed-replace;boundary=frame")
-    except HttpResponseServerError as e:
+        return StreamingHttpResponse(streaming_content=stream_server(), content_type="multipart/x-mixed-replace;boundary=frame")
+    except HttpResponseServerError:
         print("aborted")
 
 
@@ -168,6 +170,7 @@ def index(request):
 
 @login_required(login_url='/accounts/login')
 def startAdmin(request):
+    print(request)
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
     else:
@@ -216,7 +219,7 @@ def stop(request):
 def openAdmin(request):
     try:
         if rec_threads.facerecognition_thread.isAlive():
-            rec_threads.rec.arduino_open()
+            rec_threads.rec.arduino_open("manual")
             message = "Gate opened!"
         else:
             message = "Face recognition is not running!"
@@ -230,7 +233,7 @@ def openAdmin(request):
 def open(request):
     try:
         if rec_threads.facerecognition_thread.isAlive():
-            rec_threads.rec.arduino_open()
+            rec_threads.rec.arduino_open("manual")
             message = "Gate opened!"
         else:
             message = "Face recognition is not running!"
