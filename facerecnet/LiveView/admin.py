@@ -10,8 +10,9 @@ from django.http import HttpResponseRedirect
 
 class LogAdmin(admin.ModelAdmin):
     list_display = ['person', 'time', 'granted', 'image_tag']
-    list_filter = ['person', 'time', 'granted']
+    list_filter = ['time', 'granted']
     search_fields = ['person__name']
+    readonly_fields = ['person', 'time', 'granted', 'snapshot']
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -35,7 +36,7 @@ class PersonAdmin(admin.ModelAdmin):
     fields = ['name', 'authorized', 'file']
     list_display = ['name', 'authorized', 'image_tag']
     change_list_template = "LiveView/change_list.html"
-    # change_form_template = 'LiveView/change_form.html'
+
 
     def get_urls(self):
         urls = super().get_urls()

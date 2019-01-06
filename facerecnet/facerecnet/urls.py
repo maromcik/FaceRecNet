@@ -20,12 +20,18 @@ from django.conf.urls import url
 from django.views.generic.base import TemplateView
 from django.conf.urls.static import static
 from django.conf import settings
+from .views import home, send_push
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('LiveView/', include('LiveView.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('', TemplateView.as_view(template_name='home.html'), name='home'),
+    # path('', TemplateView.as_view(template_name='home.html'), name='home'),
+    path('', home, name='home'),
+    path('send_push', send_push),
+    path('webpush/', include('webpush.urls')),
+    path('sw.js', TemplateView.as_view(template_name='sw.js', content_type='application/x-javascript'))
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -312,14 +312,15 @@ class FaceRecognition:
         command = "open"
         try:
             self.c.send(command.encode("utf-8"))
-            data = self.c.recv(9).decode("utf-8")
-            if data.strip("\r\n") == "received":
+            data = self.c.recv(8).decode("utf-8").strip("\r\n")
+            data = data.rstrip()
+            if data == "received" or data == "receive" or data == "d":
                 if name != "manual":
                     person = database.Person.objects.get(name=name)
                     log = database.Log.objects.create(person=person, time=timezone.now(), granted=True,
                                                       snapshot=None)
                     log.save()
-                print(data.strip("\r\n"))
+            print(data)
 
         except (BrokenPipeError, ConnectionResetError, ConnectionError, ConnectionAbortedError):
             print("error")

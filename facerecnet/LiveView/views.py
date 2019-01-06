@@ -182,7 +182,7 @@ def start(request):
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
     else:
-        message = "Face has been started!"
+        message = "Face recognition has been started!"
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message}))
 
 
