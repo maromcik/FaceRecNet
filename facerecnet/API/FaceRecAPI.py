@@ -14,7 +14,10 @@ import select
 import LiveView.models as database
 from django.utils import timezone
 from LiveView import views
-
+from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from webpush import send_user_notification
+from facerecnet import views as frviews
 
 
 class FaceRecognition:
@@ -30,6 +33,7 @@ class FaceRecognition:
 
         self.descriptors = []
         self.names = []
+        self.name = None
         self.authorized = []
         self.total_unknown = 0
 
@@ -300,7 +304,7 @@ class FaceRecognition:
                         if (self.empty_count2 > 10) and self.auth_count > 5:
                             self.empty_count2 = 0
                             self.auth_count = 0
-                            name = self.names[label[0]]
+                            self.name = self.names[label[0]]
                             print("access denied for: ", name)
                             person = database.Person.objects.get(name=name)
                             log = database.Log.objects.create(person=person, time=timezone.now(), granted=False, snapshot=None)
@@ -324,7 +328,9 @@ class FaceRecognition:
 
         except (BrokenPipeError, ConnectionResetError, ConnectionError, ConnectionAbortedError):
             print("error")
+            self.c.shutdown(2)
             self.c.close()
+            self.s.shutdown(2)
             self.s.close()
             self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -346,6 +352,16 @@ class FaceRecognition:
             print(data)
             if data.strip("\r\n") == "ringing":
                 self.ring = True
+                if frviews.current_user is not None:
+                    user = frviews.current_user
+                    print(user)
+                    payload = {'head': 'ring', 'body': "open you idiot"}
+                    try:
+                        send_user_notification(user=user, payload=payload, ttl=1000)
+                    except TypeError:
+                        print("push unsuccessful, much like you")
+                else:
+                    print("no user")
             time.sleep(1)
             if views.rec_threads.arduino_thread.stopped():
                 self.c.shutdown(2)
@@ -354,7 +370,6 @@ class FaceRecognition:
                 self.s.close()
                 print("arduino killed")
                 break
-
 
 
 

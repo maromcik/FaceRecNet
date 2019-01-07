@@ -10,14 +10,6 @@
 {% block title %}Home{% endblock %}
 {% block content %}
 
-  <form id="send-push__form">
-    <h3 class="header">Send a push notification</h3>
-    <p class="error"></p>
-    <input type="text" name="head" placeholder="Header: Your favorite airline">
-    <textarea name="body" id="" cols="30" rows="10" placeholder="Body: Your flight has been cancelled"></textarea>
-    <button>Send Me</button>
-  </form>
-
 {% if user.is_authenticated %}
   Hi {{ user.username }}!
 <br>
@@ -46,7 +38,7 @@
   <form action="admin" method="GET">
   {{ form.as_p }}
   <button type="submit">ADMIN</button>
-</form>
+
 
 <script src="{% static '/js/registerSw.js' %}"></script>
 <script src="{% static '/js/site.js' %}"></script>

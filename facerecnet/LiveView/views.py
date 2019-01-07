@@ -18,7 +18,6 @@ models = [working_file + "shape_predictor_5_face_landmarks.dat",
 frameQ = Queue(maxsize=5)
 
 
-
 class RecognitionThreads:
 
     def __init__(self):
@@ -238,3 +237,7 @@ def open(request):
     except AttributeError:
         message = "Face recognition is not running!"
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message}))
+
+
+
+

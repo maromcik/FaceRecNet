@@ -6,6 +6,7 @@ from django.utils.decorators import method_decorator
 from django.urls import path
 from LiveView import views
 from django.http import HttpResponseRedirect
+import socket
 
 
 class LogAdmin(admin.ModelAdmin):
@@ -81,6 +82,7 @@ class SettingAdmin(admin.ModelAdmin):
         my_urls = [
             path('grab/', self.grab_cap),
             path('load/', self.load_files),
+            path('reconnect/', self.reconnect),
         ]
         return my_urls + urls
 
@@ -96,7 +98,6 @@ class SettingAdmin(admin.ModelAdmin):
         try:
             if views.rec_threads.facerecognition_thread.isAlive():
                 views.rec_threads.rec.load_files()
-                # views.x.release_cap()
                 views.rec_threads.rec.grab_cap()
                 views.rec_threads.startrecognition()
                 self.message_user(request, "Capture grabbed!")
@@ -106,6 +107,32 @@ class SettingAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect("../")
         except AttributeError:
             self.message_user(request, "Face recognition is not running!")
+            return HttpResponseRedirect("../")
+
+
+    @method_decorator(login_required(login_url='/admin/login'))
+    def reconnect(self, request):
+        try:
+            if views.rec_threads.facerecognition_thread.isAlive():
+                views.rec_threads.rec.c.shutdown(2)
+                views.rec_threads.rec.c.close()
+                views.rec_threads.rec.s.shutdown(2)
+                views.rec_threads.rec.s.close()
+                print("connection closed")
+                views.rec_threads.rec.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                views.rec_threads.rec.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                views.rec_threads.rec.s.bind((views.rec_threads.rec.host, views.rec_threads.rec.port1))
+                views.rec_threads.rec.s.listen(1)
+                views.rec_threads.rec.c, addr = views.rec_threads.rec.s.accept()
+                print(addr, " connected")
+                views.rec_threads.startrecognition()
+                self.message_user(request, "Arduino reconnected!")
+                return HttpResponseRedirect("../")
+            else:
+                self.message_user(request, "Face recognition is not running!")
+                return HttpResponseRedirect("../")
+        except AttributeError:
+            self.message_user(request, "There's a problem with the Arduino, try to restart it!")
             return HttpResponseRedirect("../")
 
 
