@@ -10,6 +10,7 @@ from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
 from webpush import send_user_notification
 import time
+from facerecnet import views as frviews
 
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
@@ -172,7 +173,8 @@ def index(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'running': running}))
+    subscription = frviews.subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'running': running, 'subscription': subscription}))
 
 
 @login_required(login_url='/accounts/login')
@@ -195,7 +197,8 @@ def start(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running}))
+    subscription = frviews.subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription}))
 
 
 @login_required(login_url='/accounts/login')
@@ -250,7 +253,8 @@ def stop(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running}))
+    subscription = frviews.subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription}))
 
 
 @login_required(login_url='/accounts/login')
@@ -289,7 +293,8 @@ def open(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running}))
+    subscription = frviews.subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription}))
 
 
 

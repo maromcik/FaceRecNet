@@ -6,6 +6,7 @@ from django.conf import settings
 from LiveView import views
 
 current_user = None
+subscription = False
 
 @require_GET
 def home(request):
@@ -16,15 +17,31 @@ def home(request):
         running = views.rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    return render(request, 'home.html', {user: user, 'vapid_key': vapid_key, 'running': running})
+    return render(request, 'home.html', {user: user, 'vapid_key': vapid_key, 'running': running, 'subscription': subscription})
 
-def getUser(sender, user, request, **kwargs):
+def subscribe(request):
+    user = request.user
     global current_user
     current_user = user
+    global subscription
+    if user.is_authenticated:
+        subscription = True
+    else:
+        subscription = False
+    try:
+        running = views.rec_threads.facerecognition_thread.isAlive()
+    except AttributeError:
+        running = False
+    return render(request, 'home.html', {user: user, 'subscription': subscription, 'running': running})
 
-def releaseUser(sender, user, request, **kwargs):
+def unsubscribe(request):
+    user = request.user
+    global subscription
+    subscription = False
     global current_user
     current_user = None
-
-user_logged_in.connect(getUser)
-user_logged_out.connect(releaseUser)
+    try:
+        running = views.rec_threads.facerecognition_thread.isAlive()
+    except AttributeError:
+        running = False
+    return render(request, 'home.html', {user: user, 'subscription': subscription,'running': running})
