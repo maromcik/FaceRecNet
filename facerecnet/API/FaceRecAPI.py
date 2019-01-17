@@ -255,7 +255,6 @@ class FaceRecognition:
         p1p4 = np.linalg.norm(p1-p4)
         # eye aspect ratio
         EAR = (p2p6 + p3p5) / (2 * p1p4)
-
         if EAR < 0.21:
             self.blink_frame_count += 1
         else:
@@ -270,7 +269,7 @@ class FaceRecognition:
 
 
 
-    def access(self, labels, image):
+    def access(self, labels, image, lock):
         if not labels:
             self.empty_count1 += 1
             self.empty_count2 += 1
@@ -298,7 +297,7 @@ class FaceRecognition:
                                 self.trigtime = time.time()
                                 name = self.names[label[0]]
                                 print("access granted for: ", name)
-                                self.arduino_server_pool.apply_async(self.arduino_open, args=(name,))
+                                self.arduino_server_pool.apply_async(self.arduino_open, args=(name, lock,))
                     else:
                         self.auth_count += 1
                         if (self.empty_count2 > 10) and self.auth_count > 5:
@@ -312,9 +311,11 @@ class FaceRecognition:
 
 
 
-    def arduino_open(self, name):
+    def arduino_open(self, name, lock):
         command = "open"
         try:
+            lock.set()
+            print("lock set in open")
             self.c.send(command.encode("utf-8"))
             data = self.c.recv(8).decode("utf-8").strip("\r\n")
             data = data.rstrip()
@@ -324,9 +325,10 @@ class FaceRecognition:
                     log = database.Log.objects.create(person=person, time=timezone.now(), granted=True,
                                                       snapshot=None)
                     log.save()
-            print(data)
-
-        except (BrokenPipeError, ConnectionResetError, ConnectionError, ConnectionAbortedError):
+            print("from open: ", data)
+            lock.clear()
+            print("lock cleared")
+        except (BrokenPipeError, ConnectionResetError, ConnectionError, ConnectionAbortedError, OSError):
             print("error")
             self.c.shutdown(2)
             self.c.close()
@@ -338,9 +340,25 @@ class FaceRecognition:
             self.s.listen(1)
             self.c, addr = self.s.accept()
             print(addr, " reconnected")
+            lock.clear()
+            print("lock cleared")
+        except socket.timeout:
+            print("timed out on sending")
+            self.c.send(command.encode("utf-8"))
+            self.c.settimeout(10)
+            data = self.c.recv(8).decode("utf-8").strip("\r\n")
+            data = data.rstrip()
+            if data == "received" or data == "receive" or data == "d":
+                if name != "manual":
+                    person = database.Person.objects.get(name=name)
+                    log = database.Log.objects.create(person=person, time=timezone.now(), granted=True,
+                                                      snapshot=None)
+                    log.save()
+            print("from open: ", data)
+            lock.clear()
+            print("lock cleared")
 
-
-    def arduino_server(self):
+    def arduino_server(self, lock):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.host, self.port1))
@@ -348,21 +366,6 @@ class FaceRecognition:
         self.c, addr = self.s.accept()
         print(addr, " connected")
         while True:
-            data = self.c.recv(7).decode("utf-8")
-            print(data)
-            if data.strip("\r\n") == "ringing":
-                self.ring = True
-                if frviews.current_user is not None:
-                    user = frviews.current_user
-                    print(user)
-                    payload = {'head': 'ring', 'body': "open you idiot"}
-                    try:
-                        send_user_notification(user=user, payload=payload, ttl=1000)
-                    except TypeError:
-                        print("push unsuccessful, much like you")
-                else:
-                    print("no user")
-            time.sleep(1)
             if views.rec_threads.arduino_thread.stopped():
                 self.c.shutdown(2)
                 self.c.close()
@@ -370,6 +373,28 @@ class FaceRecognition:
                 self.s.close()
                 print("arduino killed")
                 break
+            try:
+                if lock.is_set():
+                    time.sleep(0.5)
+                    continue
+                self.c.settimeout(10)
+                data = self.c.recv(7).decode("utf-8")
+                print("from server: ", data)
+                if data.strip("\r\n") == "ringing":
+                    self.ring = True
+                    if frviews.current_user is not None:
+                        user = frviews.current_user
+                        print(user)
+                        payload = {'head': 'ring', 'body': "open you idiot"}
+                        try:
+                            send_user_notification(user=user, payload=payload, ttl=1000)
+                        except TypeError:
+                            print("push unsuccessful, much like you")
+                    else:
+                        print("no user")
+            except (socket.timeout, OSError):
+                continue
+            time.sleep(1)
 
 
 

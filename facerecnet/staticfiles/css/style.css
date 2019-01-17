@@ -1,0 +1,20 @@
+.divbutton {
+    width: 100px;
+    height: 100px;
+    background: yellow;
+    display: flex;
+}
+.starter {
+    justify-content: left;
+    align-items: left;
+}
+
+.opener {
+    justify-content: right;
+    align-items: left;
+}
+
+.administration {
+    justify-content: left;
+    align-items: left;
+}

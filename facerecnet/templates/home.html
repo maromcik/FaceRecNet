@@ -6,45 +6,36 @@
       <meta name="user_id" content="{{ user.id }}">
     {% endif %}
 {% endblock %}
-
-{% block title %}Home{% endblock %}
+{% block title %}Smart Gate home{% endblock %}
 {% block content %}
 
 {% if user.is_authenticated %}
-  Hi {{ user.username }}!
-<br>
-  {{message}}
-</br>
-  <form action="LiveView/start" method="GET">
-  {{ form.as_p }}
-  <button type="submit">start</button>
-</form>
-
-  <form action="LiveView/stop" method="GET">
-  {{ form.as_p }}
-  <button type="submit">stop</button>
-</form>
-
-  <form action="LiveView/stream" method="GET">
-  {{ form.as_p }}
-  <button type="submit">start and open stream</button>
-</form>
-
-  <form action="LiveView/open" method="GET">
-  {{ form.as_p }}
-  <button type="submit">open gate</button>
-</form>
-
-  <form action="admin" method="GET">
-  {{ form.as_p }}
-  <button type="submit">ADMIN</button>
+    <div class="container" style="text-align: right">
+	  <a href="admin" class="btn btn-info btn-sm"> <span class="glyphicon glyphicon-cog"> </span> Admin</a>
+	  <a href="{% url 'logout' %}" class="btn btn-info btn-sm"> <span class="glyphicon glyphicon-log-out"> </span> Log out </a>
+    </div>
+    <div class="container" style="text-align: center">
+        <div class="btn-group" role="group" style="text-align: right">
+            {%if running%}
+                <a href="{% url 'LiveView:stop' %}" class="btn btn-danger" role="button"><span class="material-icons">power_settings_new</span></a>
+            {% else %}
+                <a href="{% url 'LiveView:start' %}" class="btn btn-success" role="button"><span class="material-icons">power_settings_new</span></a>
+            {%endif%}
+            <a href="{% url 'LiveView:stream' %}" class="btn btn-primary"> <span class="material-icons">ondemand_video</span></a>
+            <a href="{% url 'LiveView:open' %}" class="btn btn-warning"> <span class="material-icons">lock_open</span></a>
+        </div>
+    </div>
+    {%block liveview%}
+    {% endblock %}
 
 
 <script src="{% static '/js/registerSw.js' %}"></script>
 <script src="{% static '/js/site.js' %}"></script>
-
 {% else %}
-  <p>You are not logged in</p>
-  <a href="{% url 'login' %}">login</a>
+    <div class="container" style="text-align: center">
+	  <a href="admin" class="btn btn-info btn-lg"> <span class="glyphicon glyphicon-cog"> </span> Admin</a>
+	  <a href="{% url 'login' %}" class="btn btn-info btn-lg"> <span class="glyphicon glyphicon-log-in"> </span> Log in </a>
+    </div>
+
 {% endif %}
 {% endblock %}

@@ -25,9 +25,7 @@ const initialiseState = (reg) => {
 }
 
 const showNotAllowed = (message) => {
-    const button = document.querySelector('form>button');
-    button.innerHTML = `${message}`;
-    button.setAttribute('disabled', 'true');
+    document.write = message
 };
 
 function urlB64ToUint8Array(base64String) {
