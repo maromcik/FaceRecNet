@@ -10,7 +10,9 @@ from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
 from webpush import send_user_notification
 import time
+from django.contrib import messages
 from facerecnet import views as frviews
+from LiveView.models import Setting
 
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
@@ -173,7 +175,7 @@ def index(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = frviews.subscription
+    subscription = Setting.objects.get(pk=1).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'running': running, 'subscription': subscription}))
 
 
@@ -181,9 +183,10 @@ def index(request):
 def startAdmin(request):
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
+        messages.warning(request, message)
     else:
         message = "Face recognition has been started"
-    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+        messages.success(request, message)
     return HttpResponseRedirect("../admin")
 
 
@@ -191,14 +194,16 @@ def startAdmin(request):
 def start(request):
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
+        status = 1
     else:
         message = "Face recognition has been started!"
+        status = 0
     try:
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = frviews.subscription
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription}))
+    subscription = Setting.objects.get(pk=1).subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 
 @login_required(login_url='/accounts/login')
@@ -212,17 +217,20 @@ def stopAdmin(request):
                 if stopped:
                     print("all killed")
                     message = "Face recognition has been stopped"
-                    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+                    # admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+                    messages.success(request, message)
                     stopped = False
                     return HttpResponseRedirect("../admin")
                 time.sleep(1)
             else:
                 message = "Face recognition could not be stopped"
+                messages.error(request, message)
         else:
             message = "Face recognition is not running!"
+            messages.warning(request, message)
     except AttributeError:
         message = "Face recognition is not running!"
-    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+        messages.warning(request, message)
     stopped = False
     return HttpResponseRedirect("../admin")
 
@@ -237,24 +245,27 @@ def stop(request):
             while time.time() - stop_time < 15:
                 if stopped:
                     message = "Face recognition has been stopped"
+                    status = 0
                     print("all killed")
-                    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
                     stopped = False
-                    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message}))
+                    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'status': status}))
                 time.sleep(1)
             else:
                 message = "Face recognition could not be stopped"
+                status = 2
         else:
             message = "Face recognition is not running!"
+            status = 1
     except AttributeError:
         message = "Face recognition is not running!"
+        status = 1
     stopped = False
     try:
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = frviews.subscription
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription}))
+    subscription = Setting.objects.get(pk=1).subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 
 @login_required(login_url='/accounts/login')
@@ -263,15 +274,17 @@ def openAdmin(request):
         if rec_threads.facerecognition_thread.isAlive():
             rec_threads.rec.arduino_open("manual", arduino_lock)
             message = "Gate opened!"
+            messages.success(request, message)
         else:
             message = "Face recognition is not running!"
+            messages.warning(request, message)
             arduino_lock.clear()
             print("lock cleared")
     except AttributeError:
-        message = "There's a problem with the Arduino, try to restart it!"
+        message = "Face recognition is not running!"
         arduino_lock.clear()
         print("lock cleared")
-    admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
+        messages.warning(request, message)
     return HttpResponseRedirect("../admin")
 
 
@@ -281,21 +294,23 @@ def open(request):
         if rec_threads.facerecognition_thread.isAlive():
             rec_threads.rec.arduino_open("manual", arduino_lock)
             message = "Gate opened!"
+            status = 0
         else:
             message = "Face recognition is not running!"
+            status = 1
             arduino_lock.clear()
             print("lock cleared")
     except AttributeError:
-        message = "There's a problem with the Arduino, try to restart it!"
+        message = "Face recognition is not running!"
+        status = 1
         arduino_lock.clear()
         print("lock cleared")
     try:
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = frviews.subscription
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription}))
-
+    subscription = Setting.objects.get(pk=1).subscription
+    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 
 

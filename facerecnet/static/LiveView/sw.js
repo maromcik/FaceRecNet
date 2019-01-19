@@ -12,7 +12,7 @@ self.addEventListener('push', function (event) {
     event.waitUntil(
         self.registration.showNotification(head, {
             body: body,
-            icon: 'file:///home/user/PycharmProjects/FaceRecNet/facerecnet/static/cam4.png'
+            icon: 'file:///home/user/PycharmProjects/FaceRecNet/facerecnet/static/ring2.png'
         })
     );
 });

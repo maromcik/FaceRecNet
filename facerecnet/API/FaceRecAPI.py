@@ -34,6 +34,7 @@ class FaceRecognition:
         self.descriptors = []
         self.names = []
         self.name = None
+        self.ring_person = None
         self.authorized = []
         self.total_unknown = 0
 
@@ -303,11 +304,20 @@ class FaceRecognition:
                         if (self.empty_count2 > 10) and self.auth_count > 5:
                             self.empty_count2 = 0
                             self.auth_count = 0
-                            self.name = self.names[label[0]]
+                            name = self.names[label[0]]
                             print("access denied for: ", name)
                             person = database.Person.objects.get(name=name)
                             log = database.Log.objects.create(person=person, time=timezone.now(), granted=False, snapshot=None)
                             log.save()
+                            if frviews.current_user is not None:
+                                user = frviews.current_user
+                                payload = {'head': 'ring', 'body': name+' is here'}
+                                try:
+                                    send_user_notification(user=user, payload=payload, ttl=1000)
+                                except TypeError:
+                                    print("push unsuccessful, much like you")
+                            else:
+                                print("no user")
 
 
 
@@ -384,8 +394,7 @@ class FaceRecognition:
                     self.ring = True
                     if frviews.current_user is not None:
                         user = frviews.current_user
-                        print(user)
-                        payload = {'head': 'ring', 'body': "open you idiot"}
+                        payload = {'head': 'ring', 'body': 'someone is ringing'}
                         try:
                             send_user_notification(user=user, payload=payload, ttl=1000)
                         except TypeError:

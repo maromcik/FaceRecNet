@@ -25,7 +25,7 @@ SECRET_KEY = '&21vr&audc=3&vg%b1nkc9!#66!c6-uu6mvdf51**eb2%x4!08'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.9', 'localhost',  '127.0.0.1']
+ALLOWED_HOSTS = ['192.168.1.9', 'localhost',  '127.0.0.1',  '91dbf5ba.ngrok.io']
 
 
 # Application definition
@@ -117,7 +117,7 @@ WEBPUSH_SETTINGS = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Bratislava'
 
 USE_I18N = True
 

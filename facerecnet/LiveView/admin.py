@@ -71,7 +71,8 @@ class PersonAdmin(admin.ModelAdmin):
     image_tag.short_description = 'Image'
 
 class SettingAdmin(admin.ModelAdmin):
-    list_display = ['device', 'crop']
+    fields = ['device', 'crop', 'subscription']
+    list_display = ['device', 'crop', 'subscription']
     change_list_template = "LiveView/change_list2.html"
 
     def has_add_permission(self, request, obj=None):
