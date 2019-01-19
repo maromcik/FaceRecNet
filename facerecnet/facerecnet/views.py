@@ -50,18 +50,18 @@ def unsubscribe(request):
     return render(request, 'home.html', {user: user, 'subscription': subscription,'running': running})
 
 
-# @login_required(login_url='/accounts/login')
-# def notifikacia(request):
-#     for subscriber in Subscriber.objects.all():
-#         if subscriber.subscription:
-#             user = subscriber.user
-#             print(subscriber.user)
-#             print(subscriber.subscription)
-#             payload = {'head': 'ring', 'body': 'someone is ringing'}
-#             try:
-#                 send_user_notification(user=user, payload=payload, ttl=1000)
-#             except TypeError:
-#                 print("push typerror")
-#         else:
-#             print("no user")
-#     return HttpResponseRedirect('../')
+@login_required(login_url='/accounts/login')
+def notifikacia(request):
+    for subscriber in Subscriber.objects.all():
+        if subscriber.subscription:
+            user = subscriber.user
+            print(subscriber.user)
+            print(subscriber.subscription)
+            payload = {'head': 'ring', 'body': 'someone is ringing'}
+            try:
+                send_user_notification(user=user, payload=payload, ttl=1000)
+            except TypeError:
+                print("push typerror")
+        else:
+            print("no user")
+    return HttpResponseRedirect('../')
