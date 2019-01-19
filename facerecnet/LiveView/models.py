@@ -1,5 +1,6 @@
 from django.db import models
-from django.utils.safestring import mark_safe
+from django.contrib.auth.models import User
+
 
 
 class Person(models.Model):
@@ -29,7 +30,6 @@ class Log(models.Model):
         verbose_name_plural = "logs"
 
 class Setting(models.Model):
-    subscription = models.BooleanField(default=False)
     stream1 = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
     stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
     stream3 = "http://192.168.1.130:8080/video"
@@ -63,9 +63,19 @@ class Setting(models.Model):
         default=crop3,
     )
 
-
     def __str__(self):
         return "device and crop"
 
     class Meta:
         verbose_name_plural = "settings"
+
+
+class Subscriber(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    subscription = models.BooleanField(default=False)
+
+    def __str__(self):
+        return "will receive ring notifications, if checked."
+
+    class Meta:
+        verbose_name_plural = "subscriptions"

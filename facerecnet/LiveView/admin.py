@@ -1,5 +1,7 @@
 from django.contrib import admin
-from LiveView.models import Person, Log, Setting
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
+from LiveView.models import Person, Log, Setting, Subscriber
 from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -71,8 +73,8 @@ class PersonAdmin(admin.ModelAdmin):
     image_tag.short_description = 'Image'
 
 class SettingAdmin(admin.ModelAdmin):
-    fields = ['device', 'crop', 'subscription']
-    list_display = ['device', 'crop', 'subscription']
+    fields = ['device', 'crop']
+    list_display = ['device', 'crop']
     change_list_template = "LiveView/change_list2.html"
 
     def has_add_permission(self, request, obj=None):
@@ -137,6 +139,16 @@ class SettingAdmin(admin.ModelAdmin):
             return HttpResponseRedirect("../")
 
 
+class SubscriberInline(admin.StackedInline):
+    model = Subscriber
+    can_delete = False
+    list_display = ['subscription']
+
+class UserAdmin(BaseUserAdmin):
+    inlines = (SubscriberInline,)
+
+admin.site.unregister(User)
+admin.site.register(User, UserAdmin)
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Log, LogAdmin)
 admin.site.register(Setting, SettingAdmin)

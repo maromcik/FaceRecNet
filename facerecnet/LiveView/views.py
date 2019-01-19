@@ -12,7 +12,7 @@ from webpush import send_user_notification
 import time
 from django.contrib import messages
 from facerecnet import views as frviews
-from LiveView.models import Setting
+from LiveView.models import Subscriber
 
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
@@ -171,11 +171,12 @@ def stream(request):
 
 @login_required(login_url='/accounts/login')
 def index(request):
+    user = request.user
     try:
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = Setting.objects.get(pk=1).subscription
+    subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'running': running, 'subscription': subscription}))
 
 
@@ -192,6 +193,7 @@ def startAdmin(request):
 
 @login_required(login_url='/accounts/login')
 def start(request):
+    user = request.user
     if rec_threads.startrecognition():
         message = "Face recognition is already running."
         status = 1
@@ -202,7 +204,7 @@ def start(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = Setting.objects.get(pk=1).subscription
+    subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 
@@ -237,6 +239,7 @@ def stopAdmin(request):
 
 @login_required(login_url='/accounts/login')
 def stop(request):
+    user = request.user
     global stopped
     try:
         if rec_threads.facerecognition_thread.isAlive():
@@ -264,7 +267,7 @@ def stop(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = Setting.objects.get(pk=1).subscription
+    subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 
@@ -290,6 +293,7 @@ def openAdmin(request):
 
 @login_required(login_url='/accounts/login')
 def open(request):
+    user = request.user
     try:
         if rec_threads.facerecognition_thread.isAlive():
             rec_threads.rec.arduino_open("manual", arduino_lock)
@@ -300,7 +304,7 @@ def open(request):
             status = 1
             arduino_lock.clear()
             print("lock cleared")
-    except AttributeError:
+    except FileExistsError:
         message = "Face recognition is not running!"
         status = 1
         arduino_lock.clear()
@@ -309,7 +313,7 @@ def open(request):
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = Setting.objects.get(pk=1).subscription
+    subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 

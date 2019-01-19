@@ -309,15 +309,18 @@ class FaceRecognition:
                             person = database.Person.objects.get(name=name)
                             log = database.Log.objects.create(person=person, time=timezone.now(), granted=False, snapshot=None)
                             log.save()
-                            if frviews.current_user is not None:
-                                user = frviews.current_user
-                                payload = {'head': 'ring', 'body': name+' is here'}
-                                try:
-                                    send_user_notification(user=user, payload=payload, ttl=1000)
-                                except TypeError:
-                                    print("push unsuccessful, much like you")
-                            else:
-                                print("no user")
+                            for subscriber in database.Subscriber.objects.all():
+                                if subscriber.subscription:
+                                    user = subscriber.user
+                                    print(subscriber.user)
+                                    print(subscriber.subscription)
+                                    payload = {'head': 'ring', 'body': name+' is here'}
+                                    try:
+                                        send_user_notification(user=user, payload=payload, ttl=1000)
+                                    except FileExistsError:
+                                        print("push typerror")
+                                else:
+                                    print("User not subscribed")
 
 
 
@@ -392,15 +395,16 @@ class FaceRecognition:
                 print("from server: ", data)
                 if data.strip("\r\n") == "ringing":
                     self.ring = True
-                    if frviews.current_user is not None:
-                        user = frviews.current_user
-                        payload = {'head': 'ring', 'body': 'someone is ringing'}
-                        try:
-                            send_user_notification(user=user, payload=payload, ttl=1000)
-                        except TypeError:
-                            print("push unsuccessful, much like you")
-                    else:
-                        print("no user")
+                    for subscriber in database.Subscriber.objects.all():
+                        if subscriber.subscription:
+                            user = subscriber.user
+                            payload = {'head': 'ring', 'body': 'someone is ringing'}
+                            try:
+                                send_user_notification(user=user, payload=payload, ttl=1000)
+                            except TypeError:
+                                print("push typerror")
+                        else:
+                            print("no user")
             except (socket.timeout, OSError):
                 continue
             time.sleep(1)

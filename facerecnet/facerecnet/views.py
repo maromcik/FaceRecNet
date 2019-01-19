@@ -3,13 +3,13 @@ from django.views.decorators.http import require_GET, require_POST
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from webpush import send_user_notification
 from LiveView import views
-from LiveView.models import Setting
-
-current_user = None
+from LiveView.models import Subscriber
 
 
+@login_required(login_url='/accounts/login')
 @require_GET
 def home(request):
     webpush_settings = getattr(settings, 'WEBPUSH_SETTINGS', {})
@@ -19,50 +19,47 @@ def home(request):
         running = views.rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    subscription = Setting.objects.get(pk=1).subscription
+    subscription = Subscriber.objects.get(user=user).subscription
     return render(request, 'home.html', {user: user, 'vapid_key': vapid_key, 'running': running, 'subscription': subscription})
 
+@login_required(login_url='/accounts/login')
 def subscribe(request):
     user = request.user
-    global current_user
-    current_user = user
-    if user.is_authenticated:
-        subscription = True
-    else:
-        subscription = False
     try:
         running = views.rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    setting = Setting.objects.get(id=1)
-    setting.subscription = subscription
-    setting.save()
+    subscriber = Subscriber.objects.get(user=user)
+    subscriber.subscription = True
+    subscriber.save()
+    subscription = Subscriber.objects.get(user=user).subscription
     return render(request, 'home.html', {user: user, 'subscription': subscription, 'running': running})
 
+@login_required(login_url='/accounts/login')
 def unsubscribe(request):
     user = request.user
-    subscription = False
-    global current_user
-    current_user = None
     try:
         running = views.rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
-    setting = Setting.objects.get(id=1)
-    setting.subscription = subscription
-    setting.save()
+    subscriber = Subscriber.objects.get(user=user)
+    subscriber.subscription = False
+    subscriber.save()
+    subscription = Subscriber.objects.get(user=user).subscription
     return render(request, 'home.html', {user: user, 'subscription': subscription,'running': running})
 
-
+@login_required(login_url='/accounts/login')
 def notifikacia(request):
-    if current_user is not None:
-        user = current_user
-        payload = {'head': 'ring', 'body': 'someone is ringing'}
-        try:
-            send_user_notification(user=user, payload=payload, ttl=1000)
-            print("sent")
-        except TypeError:
-            print("push unsuccessful, much like you")
-    else:
-        print("no user")
+    for subscriber in Subscriber.objects.all():
+        if subscriber.subscription:
+            user = subscriber.user
+            print(subscriber.user)
+            print(subscriber.subscription)
+            payload = {'head': 'ring', 'body': 'someone is ringing'}
+            try:
+                send_user_notification(user=user, payload=payload, ttl=1000)
+            except TypeError:
+                print("push typerror")
+        else:
+            print("no user")
     return HttpResponseRedirect('../')
