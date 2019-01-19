@@ -317,7 +317,7 @@ class FaceRecognition:
                                     payload = {'head': 'ring', 'body': name+' is here'}
                                     try:
                                         send_user_notification(user=user, payload=payload, ttl=1000)
-                                    except FileExistsError:
+                                    except TypeError:
                                         print("push typerror")
                                 else:
                                     print("User not subscribed")
