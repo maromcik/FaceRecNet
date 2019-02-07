@@ -57,7 +57,7 @@ def notifikacia(request):
             user = subscriber.user
             print(subscriber.user)
             print(subscriber.subscription)
-            payload = {'head': 'ring', 'body': 'someone is ringing'}
+            payload = {'head': 'ring', 'body': 'someone is pressing button'}
             try:
                 send_user_notification(user=user, payload=payload, ttl=1000)
             except TypeError:

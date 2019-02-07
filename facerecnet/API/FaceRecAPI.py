@@ -9,6 +9,7 @@ from multiprocessing.pool import ThreadPool
 import pickle
 import socket
 import string
+import math
 import secrets
 import select
 import LiveView.models as database
@@ -97,6 +98,7 @@ class FaceRecognition:
     def load_image(self, filename):
         img = cv2.imread(filename)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        # img = cv2.equalizeHist(img)
         return img
 
 
@@ -191,6 +193,13 @@ class FaceRecognition:
 
 
     def compare(self, known, unknown):
+        # all = []
+        # for x in known:
+        #     temp = 0
+        #     for y in range(len(x)):
+        #         temp = (x[y]-unknown[y])**2 + temp
+        #     all.append(math.sqrt(temp))
+        # print(all)
         return np.linalg.norm(known - unknown, axis=1)
 
 
@@ -241,7 +250,7 @@ class FaceRecognition:
         # self.outputQ.put(frame)
         # cv2.imshow("SmartGate", image)
         # cv2.waitKey(1)
-        return labels, frame  #return original image as well
+        return labels, frame
 
 
     def blink_detector(self, landmark, label):
@@ -398,6 +407,8 @@ class FaceRecognition:
                     for subscriber in database.Subscriber.objects.all():
                         if subscriber.subscription:
                             user = subscriber.user
+                            print(subscriber.user)
+                            print(subscriber.subscription)
                             payload = {'head': 'ring', 'body': 'someone is ringing'}
                             try:
                                 send_user_notification(user=user, payload=payload, ttl=1000)

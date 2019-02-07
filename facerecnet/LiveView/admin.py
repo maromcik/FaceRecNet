@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 from django.urls import path
 from LiveView import views
 from django.http import HttpResponseRedirect
+from django.contrib import messages
 import socket
 
 
@@ -103,13 +104,13 @@ class SettingAdmin(admin.ModelAdmin):
                 views.rec_threads.rec.load_files()
                 views.rec_threads.rec.grab_cap()
                 views.rec_threads.startrecognition()
-                self.message_user(request, "Capture grabbed!")
+                messages.success(request, "Capture grabbed!")
                 return HttpResponseRedirect("../")
             else:
-                self.message_user(request, "Face recognition is not running!")
+                messages.warning(request, "Face recognition is not running!")
                 return HttpResponseRedirect("../")
         except AttributeError:
-            self.message_user(request, "Face recognition is not running!")
+            messages.warning(request, "Face recognition is not running!")
             return HttpResponseRedirect("../")
 
 
@@ -132,10 +133,10 @@ class SettingAdmin(admin.ModelAdmin):
                 self.message_user(request, "Arduino reconnected!")
                 return HttpResponseRedirect("../")
             else:
-                self.message_user(request, "Face recognition is not running!")
+                messages.warning(request, "Face recognition is not running!")
                 return HttpResponseRedirect("../")
         except AttributeError:
-            self.message_user(request, "There's a problem with the Arduino, try to restart it!")
+            messages.error(request, "There's a problem with the Arduino, try to restart it!")
             return HttpResponseRedirect("../")
 
 
