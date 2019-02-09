@@ -304,7 +304,7 @@ def open(request):
             status = 1
             arduino_lock.clear()
             print("lock cleared")
-    except FileExistsError:
+    except AttributeError:
         message = "Face recognition is not running!"
         status = 1
         arduino_lock.clear()
