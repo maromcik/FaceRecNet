@@ -241,7 +241,7 @@ class FaceRecognition:
         # self.outputQ.put(frame)
         # cv2.imshow("SmartGate", image)
         # cv2.waitKey(1)
-        return labels, frame  #return original image as well
+        return labels, frame
 
 
     def blink_detector(self, landmark, label):
@@ -398,6 +398,8 @@ class FaceRecognition:
                     for subscriber in database.Subscriber.objects.all():
                         if subscriber.subscription:
                             user = subscriber.user
+                            print(subscriber.user)
+                            print(subscriber.subscription)
                             payload = {'head': 'ring', 'body': 'someone is ringing'}
                             try:
                                 send_user_notification(user=user, payload=payload, ttl=1000)
