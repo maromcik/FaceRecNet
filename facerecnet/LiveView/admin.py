@@ -104,7 +104,7 @@ class SettingAdmin(admin.ModelAdmin):
                 views.rec_threads.rec.load_files()
                 views.rec_threads.rec.grab_cap()
                 views.rec_threads.startrecognition()
-                messages.success(request, "Capture grabbed!")
+                messages.success(request, "Camera reconnected!")
                 return HttpResponseRedirect("../")
             else:
                 messages.warning(request, "Face recognition is not running!")
