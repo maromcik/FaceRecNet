@@ -20,12 +20,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-
+SECRET_KEY = '&21vr&audc=3&vg%b1nkc9!#66!c6-uu6mvdf51**eb2%x4!08'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.9', 'localhost',  '127.0.0.1', '3541b726.ngrok.io']
+ALLOWED_HOSTS = ['192.168.1.9', 'localhost',  '127.0.0.1']
 
 
 # Application definition
@@ -82,6 +82,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': "FaceRecNet",
         'USER': 'root',
+        'PASSWORD': 'M18ercedes!',
         'HOST': 'localhost',
         'PORT': ''
     }
@@ -106,6 +107,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 WEBPUSH_SETTINGS = {
+   "VAPID_PUBLIC_KEY": "BNHxdsMGuC7VCvd02rVvrTr2Y_Vuqt7C3aay_T4_Zy2H46wtst9h_srk_3-Bc5zwwe6UVuBhDinfJRs9HRiIUXE",
+   "VAPID_PRIVATE_KEY": "WoYS59wKwzZXZL3xoF5rZ3Y-RjxNG8JsVtAoLuxInF0",
+   "VAPID_ADMIN_EMAIL": "mariancik@ulubkysro.sk"
 }
 
 # Internationalization
