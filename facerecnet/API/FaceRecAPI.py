@@ -112,7 +112,7 @@ class FaceRecognition:
         # self.device = "/home/user/PycharmProjects/resource/rebs2.mp4"
         self.cap = cv2.VideoCapture(self.device)
 
-
+    #load neccessary files
     def load_files(self):
         self.device = database.Setting.objects.get(pk=1).device
         print("Device has been loaded")
