@@ -138,7 +138,7 @@ def facerecognition():
         labels, frame = process.get()
         access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, frame, arduino_lock))
         if restarted == False:
-            cv2.imshow("test", frame)
+            cv2.imshow("FaceRecognition", frame)
             cv2.waitKey(1)
         if frameQ.full():
             continue
