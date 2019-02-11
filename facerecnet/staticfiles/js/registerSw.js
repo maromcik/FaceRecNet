@@ -1,3 +1,9 @@
+/*This code is borrowed from Digital Ocean's tutorial which is released under
+Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+The code has been modified.
+The original code can be found on this website to 12th of February 2019.
+https://www.digitalocean.com/community/tutorials/how-to-send-web-push-notifications-from-django-applications*/
+
 const registerSw = async () => {
     if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.register('sw.js');
