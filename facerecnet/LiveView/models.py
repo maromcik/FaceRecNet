@@ -1,16 +1,19 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
+#every class represents table in the database
 
 class Person(models.Model):
+    #fields of the table
     name = models.CharField(max_length=50)
     authorized = models.BooleanField(default=False)
     file = models.ImageField(upload_to="persons/")
+    #display names
     def __str__(self):
         return self.name
     def __unicode__(self):
         return self.name
+    #display name of plural forms
     class Meta:
         verbose_name_plural = "persons"
 
@@ -30,6 +33,7 @@ class Log(models.Model):
         verbose_name_plural = "logs"
 
 class Setting(models.Model):
+    #predetermined choices
     stream1 = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
     stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
     stream3 = "http://192.168.1.130:8080/video"
@@ -51,11 +55,13 @@ class Setting(models.Model):
     crop1 = '0.75'
     crop2 = '0.5'
     crop3 = '0.25'
+    crop4 = '0.1'
     CROP_CHOICES = (
         (crop0, '1'),
         (crop1, '0.75'),
         (crop2, '0.5'),
         (crop3, '0.25'),
+        (crop4, '0.1'),
     )
     crop = models.CharField(
         max_length=10,
@@ -69,7 +75,7 @@ class Setting(models.Model):
     class Meta:
         verbose_name_plural = "settings"
 
-
+#definition of subscriber field in the user model
 class Subscriber(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     subscription = models.BooleanField(default=False)

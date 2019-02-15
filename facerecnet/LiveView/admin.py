@@ -11,16 +11,19 @@ from django.http import HttpResponseRedirect
 from django.contrib import messages
 import socket
 
-
+#redifines admin interface behavour
 class LogAdmin(admin.ModelAdmin):
+    #field options
     list_display = ['person', 'time', 'granted', 'image_tag']
     list_filter = ['time', 'granted']
     search_fields = ['person__name']
     readonly_fields = ['person', 'time', 'granted', 'snapshot']
 
+    #you cannot change logs
     def has_add_permission(self, request, obj=None):
         return False
 
+    #there's an image (snapshot)
     def image_tag(self, obj):
         try:
             return mark_safe('<img src="{url}" height={height} />'.format(
@@ -41,7 +44,7 @@ class PersonAdmin(admin.ModelAdmin):
     list_display = ['name', 'authorized', 'image_tag']
     change_list_template = "LiveView/change_list.html"
 
-
+    #add links to custom buttons
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -50,8 +53,10 @@ class PersonAdmin(admin.ModelAdmin):
         ]
         return my_urls + urls
 
+    # add functionality to custom buttons
     @method_decorator(login_required(login_url='/admin/login'))
     def run_encodings(self, request):
+        #triggers running encodings of known persons
         views.rec_threads.rec.load_files()
         views.rec_threads.rec.known_subjects_descriptors()
         views.rec_threads.rec.load_files()
@@ -59,11 +64,13 @@ class PersonAdmin(admin.ModelAdmin):
         return HttpResponseRedirect("../")
 
     @method_decorator(login_required(login_url='/admin/login'))
+    #load files
     def load_files(self, request):
         views.rec_threads.rec.load_files()
         self.message_user(request, "Files loaded!")
         return HttpResponseRedirect("../")
 
+    #there's an image of known person in the fields
     def image_tag(self, obj):
         return mark_safe('<img src="{url}" height={height} />'.format(
             url = obj.file.url,
@@ -78,6 +85,7 @@ class SettingAdmin(admin.ModelAdmin):
     list_display = ['device', 'crop']
     change_list_template = "LiveView/change_list2.html"
 
+    #there's only one row of settings, there are no more
     def has_add_permission(self, request, obj=None):
         return False
 
@@ -99,6 +107,7 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def grab_cap(self, request):
+        #grabs capture (reconnects camera)
         try:
             if views.rec_threads.facerecognition_thread.isAlive():
                 views.rec_threads.rec.load_files()
@@ -116,6 +125,7 @@ class SettingAdmin(admin.ModelAdmin):
 
     @method_decorator(login_required(login_url='/admin/login'))
     def reconnect(self, request):
+        #reconnects arduino
         try:
             if views.rec_threads.facerecognition_thread.isAlive():
                 views.rec_threads.rec.c.shutdown(2)
@@ -139,7 +149,7 @@ class SettingAdmin(admin.ModelAdmin):
             messages.error(request, "There's a problem with the Arduino, try to restart it!")
             return HttpResponseRedirect("../")
 
-
+#adds subscriber field to authenticated users table
 class SubscriberInline(admin.StackedInline):
     model = Subscriber
     can_delete = False
@@ -148,6 +158,7 @@ class SubscriberInline(admin.StackedInline):
 class UserAdmin(BaseUserAdmin):
     inlines = (SubscriberInline,)
 
+#registers all the models
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
 admin.site.register(Person, PersonAdmin)
