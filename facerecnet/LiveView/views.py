@@ -1,38 +1,38 @@
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import  render
 from django.contrib.auth.decorators import login_required
 from django.http import StreamingHttpResponse, HttpResponseServerError
-from django.contrib import admin
 import cv2
 import threading
 from queue import Queue
 from multiprocessing.pool import ThreadPool
 from API import FaceRecAPI
-from webpush import send_user_notification
 import time
 from django.contrib import messages
-from facerecnet import views as frviews
 from LiveView.models import Subscriber
 
+#get models
 working_file = "/home/user/Documents/dlib/models/"
 models = [working_file + "shape_predictor_5_face_landmarks.dat",
           working_file + "dlib_face_recognition_resnet_model_v1.dat",
           working_file + "shape_predictor_68_face_landmarks.dat"]
 
-
+#create Queue for stream
 frameQ = Queue(maxsize=5)
+#create lock event
 arduino_lock = threading.Event()
 arduino_lock.clear()
 
-
+#create all neccessary threads
 class RecognitionThreads:
 
     def __init__(self):
+        #create FaceRec instance
         self.rec = FaceRecAPI.FaceRecognition(models)
         self.rec.load_files()
 
+    #start the recognition or check if it is running
     def startrecognition(self):
-
         try:
             if self.facerecognition_thread.isAlive():
                 return True
@@ -58,7 +58,7 @@ class RecognitionThreads:
 
 rec_threads = RecognitionThreads()
 
-
+#definitions of stoppable threads
 class FaceRecognitionThread(threading.Thread):
     def __init__(self):
         super(FaceRecognitionThread, self).__init__(target=facerecognition, name="FaceRecThread")
@@ -106,6 +106,7 @@ class StreamThread(threading.Thread):
 restarted = False
 stopped = False
 
+#main face recogntion function, glueing everything into one piece
 def facerecognition():
     print("face recognition is starting up")
     try:
@@ -117,6 +118,7 @@ def facerecognition():
     rec_threads.arduino_thread.start()
     print("Face Recognition is running")
     while True:
+        #check if recognition has been stopped
         if rec_threads.facerecognition_thread.stopped():
             rec_threads.arduino_thread.stop()
             rec_threads.stream_thread.stop()
@@ -134,9 +136,12 @@ def facerecognition():
             global stopped
             stopped = True
             break
+        #call process and access functions
         process = rec_threads.process_pool.apply_async(rec_threads.rec.process)
         labels, frame = process.get()
         access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, frame, arduino_lock))
+        #if recogntion hasn't been restared display image on server, else don't or it will fail (because of internal
+        # OpenCV bug I think)
         if restarted == False:
             cv2.imshow("FaceRecognition", frame)
             cv2.waitKey(1)
@@ -151,7 +156,7 @@ def facerecognition():
     cv2.destroyAllWindows()
     return
 
-
+#pulls frames from a Queue and converts them to bytestream
 def stream_server():
     while True:
         image = frameQ.get()
@@ -159,7 +164,7 @@ def stream_server():
         frame = jpeg.tobytes()
         yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
 
-
+#streams the bytestream to the home page
 @login_required(login_url='/accounts/login')
 def stream(request):
     try:
@@ -168,7 +173,7 @@ def stream(request):
     except HttpResponseServerError:
         print("aborted")
 
-
+#renders LiveView template
 @login_required(login_url='/accounts/login')
 def index(request):
     user = request.user
@@ -179,7 +184,7 @@ def index(request):
     subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'running': running, 'subscription': subscription}))
 
-
+#starts recognition from the admin interface
 @login_required(login_url='/accounts/login')
 def startAdmin(request):
     if rec_threads.startrecognition():
@@ -190,7 +195,7 @@ def startAdmin(request):
         messages.success(request, message)
     return HttpResponseRedirect("../admin")
 
-
+#starts recognition from the home page
 @login_required(login_url='/accounts/login')
 def start(request):
     user = request.user
@@ -207,7 +212,7 @@ def start(request):
     subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
-
+#stops recognition from the admin interface
 @login_required(login_url='/accounts/login')
 def stopAdmin(request):
     global stopped
@@ -236,7 +241,7 @@ def stopAdmin(request):
     stopped = False
     return HttpResponseRedirect("../admin")
 
-
+#stops recognition from the home page
 @login_required(login_url='/accounts/login')
 def stop(request):
     user = request.user
@@ -270,7 +275,7 @@ def stop(request):
     subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
-
+#opens gate from the admin interface
 @login_required(login_url='/accounts/login')
 def openAdmin(request):
     try:
@@ -290,7 +295,7 @@ def openAdmin(request):
         messages.warning(request, message)
     return HttpResponseRedirect("../admin")
 
-
+#opens gate from the home page
 @login_required(login_url='/accounts/login')
 def open(request):
     user = request.user

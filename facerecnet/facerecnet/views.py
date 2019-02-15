@@ -11,7 +11,9 @@ from LiveView.models import Subscriber
 
 @login_required(login_url='/accounts/login')
 @require_GET
+#renders home page
 def home(request):
+    #keys for push notifications
     webpush_settings = getattr(settings, 'WEBPUSH_SETTINGS', {})
     vapid_key = webpush_settings.get('VAPID_PUBLIC_KEY')
     user = request.user
@@ -23,12 +25,14 @@ def home(request):
     return render(request, 'home.html', {user: user, 'vapid_key': vapid_key, 'running': running, 'subscription': subscription})
 
 @login_required(login_url='/accounts/login')
+#subscribe to push notifications
 def subscribe(request):
     user = request.user
     try:
         running = views.rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
         running = False
+    #writes the subscription info to the database
     subscriber = Subscriber.objects.get(user=user)
     subscriber.subscription = True
     subscriber.save()
@@ -37,6 +41,7 @@ def subscribe(request):
 
 
 @login_required(login_url='/accounts/login')
+#same principle, but unsubcsribe
 def unsubscribe(request):
     user = request.user
     try:
@@ -50,18 +55,3 @@ def unsubscribe(request):
     return render(request, 'home.html', {user: user, 'subscription': subscription,'running': running})
 
 
-@login_required(login_url='/accounts/login')
-def notifikacia(request):
-    for subscriber in Subscriber.objects.all():
-        if subscriber.subscription:
-            user = subscriber.user
-            print(subscriber.user)
-            print(subscriber.subscription)
-            payload = {'head': 'ring', 'body': 'someone is pressing button'}
-            try:
-                send_user_notification(user=user, payload=payload, ttl=1000)
-            except TypeError:
-                print("push typerror")
-        else:
-            print("no user")
-    return HttpResponseRedirect('../')

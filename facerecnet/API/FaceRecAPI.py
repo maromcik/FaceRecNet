@@ -25,6 +25,7 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 
+#importing needed modules
 import dlib
 import cv2
 import numpy as np
@@ -36,59 +37,57 @@ from multiprocessing.pool import ThreadPool
 import pickle
 import socket
 import string
-import math
 import secrets
-import select
 import LiveView.models as database
 from django.utils import timezone
 from LiveView import views
-from django.contrib.auth.models import User
-from django.shortcuts import get_object_or_404
 from webpush import send_user_notification
-from facerecnet import views as frviews
 
-
+#Class managing face recognition, interaction with Arduino and logging to database
 class FaceRecognition:
     def __init__(self, models_paths):
+        #resize factor, incorrectly called crop factor in the documentation and models. It's a typo.
         self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
+        #device got form database
         self.device = database.Setting.objects.get(pk=1).device
-        # self.device = "/home/user/PycharmProjects/resource/rebs2.mp4"
+        #neccessary models for shape prediction and face recognition
         self.models = models_paths
         self.dir = os.path.join(os.path.dirname(__file__), "..")
-
+        #creates a Queue for frames got camera
         self.frameQ = Queue()
-        self.resize_lock = threading.Lock()
 
+        #lists of descriptors, all names and authorized names
         self.descriptors = []
         self.names = []
-        self.name = None
-        self.ring_person = None
         self.authorized = []
-        self.total_unknown = 0
 
+        #counts blinks in the blink detector
         self.blink_frame_count = 0
         self.frame_count = 0
 
+        #variables for the access function
         self.auth_count = 0
         self.unknown_count = 0
         self.empty_count1 = 0
         self.empty_count2 = 0
         self.trigtime = 0
 
+        #creating dlib objects, face detector, shape (landmark) detector and the facial recognition itself
         self.detector = dlib.get_frontal_face_detector()
-        self.predictor5 = dlib.shape_predictor(self.models[0])
         self.predictor68 = dlib.shape_predictor(self.models[2])
         self.facerec_model = dlib.face_recognition_model_v1(self.models[1])
 
+        #async thread pool for Arduino
         self.arduino_server_pool = ThreadPool(processes=1)
-        # self.arduino_server_pool2 = ThreadPool(processes=1)
 
+        #LAN information
         self.host = ""
         self.port1 = 13081
         self.port2 = 13082
 
         self.ring = False
 
+        #loading data
         self.persons = database.Person.objects.all()
         self.pks = list(self.persons.values_list('id', flat=True))
         print("primary keys have been loaded")
@@ -100,20 +99,20 @@ class FaceRecognition:
         print("images have been loaded")
 
 
-
+    #draws the bounding rectangle to every processed frame
     def draw(self, img, rect):
         (x, y, w, h) = rect
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-
+    #prints name of the person to every processed frame
     def PrintText(self, img, text, x, y):
         cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
 
-
+    #resizes frames
     def resize_img(self, img, fx=0.25, fy=0.25):
         return cv2.resize(img, (0, 0), fx=fx, fy=fy)
 
-
+    #convers dlib coordinates to opencv coordinates
     def dlib2opencv(self, dlib_rect):
         x = dlib_rect.left()
         y = dlib_rect.top()
@@ -121,25 +120,25 @@ class FaceRecognition:
         h = dlib_rect.bottom()
         return [x, y, w - x, h - y]
 
-
+    #loads static images of known persons
     def load_image(self, filename):
         img = cv2.imread(filename)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # img = cv2.equalizeHist(img)
         return img
 
-
+    #releases video capture
     def release_cap(self):
         self.cap.release()
 
-
+    #grabs video capture
     def grab_cap(self):
         self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
         self.device = database.Setting.objects.get(pk=1).device
         # self.device = "/home/user/PycharmProjects/resource/rebs2.mp4"
         self.cap = cv2.VideoCapture(self.device)
 
-    #load neccessary files
+    #loads neccessary files
     def load_files(self):
         self.device = database.Setting.objects.get(pk=1).device
         print("Device has been loaded")
@@ -178,6 +177,7 @@ class FaceRecognition:
 
         return True
 
+    #computes descriptors of known persons (all faces in the person table)
     def known_subjects_descriptors(self):
         descriptors = []
         self.dir = os.path.join(os.path.dirname(__file__), "..")
@@ -199,7 +199,7 @@ class FaceRecognition:
         outfile.close()
         print("descriptors of known people has been saved")
 
-
+    #detects faces in frames
     def detect(self, img):
         faces = self.detector(img, 1)
         if len(faces) != 0:
@@ -207,19 +207,20 @@ class FaceRecognition:
         else:
             return None
 
-
+    #finds landmarks in frames using the shape predictor
     def find_landmarks(self, img, faces):
         landmarks = []
         for face in faces:
             landmarks.append(self.predictor68(img, face))
         return landmarks
 
-
+    #computes descriptors
     def descriptor(self, img, landmarks):
         return np.array(self.facerec_model.compute_face_descriptor(img, landmarks))
 
-
+    #compares 2 faces in 128D space
     def compare(self, known, unknown):
+        #the commented code is an alternative version for explanatory reasons, gives the same results
         # all = []
         # for x in known:
         #     temp = 0
@@ -229,7 +230,7 @@ class FaceRecognition:
         # print(all)
         return np.linalg.norm(known - unknown, axis=1)
 
-
+    #reads stream from a camera, runs neccessary image processings and puts every frame to frameQ
     def read_stream(self):
         this_frame = True
         while True:
@@ -239,34 +240,45 @@ class FaceRecognition:
                 break
             ret, frame = self.cap.read()
             if frame is not None:
+                #process every other frame
                 if this_frame:
                     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     self.frameQ.put(frame)
                 this_frame = not this_frame
         return
 
-
+    #main function, puts everything needed for facial rec. together
     def process(self):
         labels = []
         image = self.frameQ.get()
         frame = self.resize_img(image, fx=self.resize_factor, fy=self.resize_factor)
         faces = self.detect(frame)
+        #if there are any faces in the frame
         if faces is not None:
             landmarks = self.find_landmarks(frame, faces)
+            #for every faces do following
             for y in range(0, len(faces)):
+                #convert coordinate systems
                 rect = self.dlib2opencv(faces[y])
+                #draw a rectangle
                 self.draw(frame, rect)
+                #create list of comparisons by comparing the tested faces against every face in the database
                 comparisons = (self.compare(self.descriptors, self.descriptor(frame, landmarks[y]))).tolist()
-
+                #do for every comparison in the list comparisons
                 for comparison in comparisons:
+                    #if the comparison is smaller than this experimentally chosen threshold
                     if comparison <= 0.55:
+                        #get label from index of the comparison in comparisons list
                         label = comparisons.index(comparison)
+                        #try to print the name of the person
                         try:
                             self.PrintText(frame, self.names[label], rect[0], rect[1])
+                        #if it fails, the person doesn't exist anymore
                         except IndexError:
-                            print("Person does not exist anymore, you're most likely running encodings")
+                            print("Person does not exist anymore, you have most likely forgotten to load files.")
+                        #add a tupple which consists of blink information and label
                         labels.append(self.blink_detector(landmarks[y], label))
-
+                #if there's no match, the face have to be unknown
                 if all(i >= 0.55 for i in comparisons):
                     self.PrintText(frame, "unknown", rect[0], rect[1])
                     labels.append(None)
@@ -281,22 +293,28 @@ class FaceRecognition:
 
 
     def blink_detector(self, landmark, label):
+        #create 2-item lists of 6 specific points on an eye from landmarks and convert it to numpy arrays
         p1 = np.array([landmark.parts()[36].x, landmark.parts()[36].y])
         p2 = np.array([landmark.parts()[37].x, landmark.parts()[37].y])
         p3 = np.array([landmark.parts()[38].x, landmark.parts()[38].y])
         p4 = np.array([landmark.parts()[39].x, landmark.parts()[39].y])
         p5 = np.array([landmark.parts()[40].x, landmark.parts()[40].y])
         p6 = np.array([landmark.parts()[41].x, landmark.parts()[41].y])
+        #find euclidean distance between specific pairs of those points
         p2p6 = np.linalg.norm(p2-p6)
         p3p5 = np.linalg.norm(p3-p5)
         p1p4 = np.linalg.norm(p1-p4)
-        # eye aspect ratio
+        #compute eye aspect ratio
         EAR = (p2p6 + p3p5) / (2 * p1p4)
+        #if the EAR is smaller than experimentally chosen threshlod a person has closed eyes in the frame
         if EAR < 0.21:
             self.blink_frame_count += 1
+        #or she/he doesn't
         else:
             self.frame_count += 1
 
+        #if the person has closed eyes in 2 frames and open in 3 we consider this to be a blink. return true
+        #and reset the variables
         if self.blink_frame_count >= 2 and self.frame_count >= 3:
             self.blink_frame_count = 0
             self.frame_count = 0
@@ -305,20 +323,25 @@ class FaceRecognition:
             return label, False
 
 
-
+    #manages access and writes logs to database
     def access(self, labels, image, lock):
+        #if no face in frame
         if not labels:
             self.empty_count1 += 1
             self.empty_count2 += 1
         else:
             for label in labels:
+                #if label is none (the person is unknown)
                 if label is None:
                     self.unknown_count += 1
+                    #protection against continual writing to database if the person is in front of the camera
+                    #for longer period of time, process only in person ringed the bell.
                     if (self.empty_count1 > 13) and self.unknown_count > 8 and self.ring is True:
                         print("unknown")
                         text = ''.join(secrets.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(20))
                         fullpath = self.dir+"/media/snapshots/"+text+".jpg"
                         djangopath = "snapshots/"+text+".jpg"
+                        #save snapshot
                         if cv2.imwrite(fullpath, image):
                             print("snap saved")
                         self.unknown_count = 0
@@ -328,14 +351,17 @@ class FaceRecognition:
                         log.save()
                         self.ring = False
                 else:
+                    #if the person is authorized and blinked
                     if self.names[label[0]] in self.authorized:
                         if label[1] == True:
                             if time.time() - self.trigtime >= 2:
                                 self.trigtime = time.time()
                                 name = self.names[label[0]]
+                                #give access, by calling open function
                                 print("access granted for: ", name)
                                 self.arduino_server_pool.apply_async(self.arduino_open, args=(name, lock,))
                     else:
+                        #again protection agains continual writing
                         self.auth_count += 1
                         if (self.empty_count2 > 10) and self.auth_count > 5:
                             self.empty_count2 = 0
@@ -345,6 +371,7 @@ class FaceRecognition:
                             person = database.Person.objects.get(name=name)
                             log = database.Log.objects.create(person=person, time=timezone.now(), granted=False, snapshot=None)
                             log.save()
+                            #sent push notification to every subscribed user with name of the person
                             for subscriber in database.Subscriber.objects.all():
                                 if subscriber.subscription:
                                     user = subscriber.user
@@ -408,6 +435,7 @@ class FaceRecognition:
             print("lock cleared")
 
     def arduino_server(self, lock):
+        #arduino server running in arduino thread, create unix socket interface
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.s.bind((self.host, self.port1))
@@ -415,6 +443,7 @@ class FaceRecognition:
         self.c, addr = self.s.accept()
         print(addr, " connected")
         while True:
+            #if stop event is sent, try to close connections
             if views.rec_threads.arduino_thread.stopped():
                 self.c.shutdown(2)
                 self.c.close()
@@ -429,6 +458,7 @@ class FaceRecognition:
                 self.c.settimeout(10)
                 data = self.c.recv(7).decode("utf-8")
                 print("from server: ", data)
+                #if the person ringed, send push notification
                 if data.strip("\r\n") == "ringing":
                     self.ring = True
                     for subscriber in database.Subscriber.objects.all():
