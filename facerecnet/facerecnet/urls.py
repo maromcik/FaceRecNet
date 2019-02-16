@@ -31,7 +31,6 @@ urlpatterns = [
     path('unsubscribe', unsubscribe, name='unsubscribe'),
     path('webpush/', include('webpush.urls')),
     path('sw.js', TemplateView.as_view(template_name='sw.js', content_type='application/x-javascript')),
-    # path('notifikacia', notifikacia, name='notifikacia'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
