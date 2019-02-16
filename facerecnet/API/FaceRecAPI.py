@@ -377,7 +377,7 @@ class FaceRecognition:
                                     user = subscriber.user
                                     print(subscriber.user)
                                     print(subscriber.subscription)
-                                    payload = {'head': 'ring', 'body': name+' is here', 'icon' : 'file:///home/user/PycharmProjects/FaceRecNet/facerecnet/static/test.jpg', 'url' : 'http://192.168.1.9/LiveView/open'}
+                                    payload = {'head': 'ring', 'body': name+' is here'}
                                     try:
                                         send_user_notification(user=user, payload=payload, ttl=1000)
                                     except TypeError:
