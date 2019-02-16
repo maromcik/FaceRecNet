@@ -54,4 +54,3 @@ def unsubscribe(request):
     subscription = Subscriber.objects.get(user=user).subscription
     return render(request, 'home.html', {user: user, 'subscription': subscription,'running': running})
 
-

@@ -140,6 +140,7 @@ class FaceRecognition:
 
     #loads neccessary files
     def load_files(self):
+        self.authorized = []
         self.device = database.Setting.objects.get(pk=1).device
         print("Device has been loaded")
         self.resize_factor = float(database.Setting.objects.get(pk=1).crop)
@@ -156,7 +157,6 @@ class FaceRecognition:
         for name, authorized_pk in zip(self.names, self.authorized_pks):
             if authorized_pk:
                 self.authorized.append(name)
-
         try:
             with open('descriptors.pkl', 'rb') as infile:
                 self.descriptors = pickle.load(infile)
@@ -377,7 +377,7 @@ class FaceRecognition:
                                     user = subscriber.user
                                     print(subscriber.user)
                                     print(subscriber.subscription)
-                                    payload = {'head': 'ring', 'body': name+' is here'}
+                                    payload = {'head': 'ring', 'body': name+' is here', 'icon' : 'file:///home/user/PycharmProjects/FaceRecNet/facerecnet/static/test.jpg', 'url' : 'http://192.168.1.9/LiveView/open'}
                                     try:
                                         send_user_notification(user=user, payload=payload, ttl=1000)
                                     except TypeError:
