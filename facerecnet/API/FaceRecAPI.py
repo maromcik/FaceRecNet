@@ -458,7 +458,7 @@ class FaceRecognition:
                 self.c.settimeout(10)
                 data = self.c.recv(7).decode("utf-8")
                 print("from server: ", data)
-                #if the person ringed, send push notification
+                #if the person has ringed, send push notification
                 if data.strip("\r\n") == "ringing":
                     self.ring = True
                     for subscriber in database.Subscriber.objects.all():
