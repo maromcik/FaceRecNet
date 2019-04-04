@@ -145,8 +145,11 @@ class SettingAdmin(admin.ModelAdmin):
             else:
                 messages.warning(request, "Face recognition is not running!")
                 return HttpResponseRedirect("../")
-        except AttributeError:
+        except (OSError, ConnectionAbortedError, ConnectionResetError, ConnectionError, BrokenPipeError):
             messages.error(request, "There's a problem with the Arduino, try to restart it!")
+            return HttpResponseRedirect("../")
+        except AttributeError:
+            messages.warning(request, "Face recognition is not running!")
             return HttpResponseRedirect("../")
 
 #adds subscriber field to authenticated users table
