@@ -275,6 +275,7 @@ def stop(request):
     subscription = Subscriber.objects.get(user=user).subscription
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
+
 #opens gate from the admin interface
 @login_required(login_url='/accounts/login')
 def openAdmin(request):
@@ -293,7 +294,13 @@ def openAdmin(request):
         arduino_lock.clear()
         print("lock cleared")
         messages.warning(request, message)
+    except OSError:
+        message = "There's a problem with the Arduino, try to restart it!"
+        arduino_lock.clear()
+        print("lock cleared")
+        messages.error(request, message)
     return HttpResponseRedirect("../admin")
+
 
 #opens gate from the home page
 @login_required(login_url='/accounts/login')
@@ -314,6 +321,11 @@ def open(request):
         status = 1
         arduino_lock.clear()
         print("lock cleared")
+    except OSError:
+        message = "There's a problem with the Arduino, try to restart it!"
+        status = 2
+        arduino_lock.clear()
+        print("error, lock cleared")
     try:
         running = rec_threads.facerecognition_thread.isAlive()
     except AttributeError:
