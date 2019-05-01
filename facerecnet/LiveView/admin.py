@@ -17,11 +17,11 @@ class LogAdmin(admin.ModelAdmin):
     list_display = ['person', 'time', 'image_tag']
     list_filter = ['time']
     search_fields = ['person__name']
-    readonly_fields = ['person', 'time', 'snapshot']
+    # readonly_fields = ['person', 'time', 'snapshot']
 
     #you cannot change logs
-    def has_add_permission(self, request, obj=None):
-        return False
+    # def has_add_permission(self, request, obj=None):
+    #     return False
 
     #there's an image (snapshot)
     def image_tag(self, obj):

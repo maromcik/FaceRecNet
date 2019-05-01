@@ -28,7 +28,7 @@ class Statistic(models.Model):
 
 
 class Log(models.Model):
-    person = models.ForeignKey(Person, on_delete=models.CASCADE, null=True)
+    person = models.ForeignKey(Person, on_delete=models.CASCADE, null=True, blank=True)
     time = models.DateTimeField('date of attempt to access')
     snapshot = models.ImageField(upload_to="snapshots/", blank=True)
 

@@ -226,7 +226,7 @@ class FaceRecognition:
         return np.array(self.facerec_model.compute_face_descriptor(img, landmarks))
 
     #compares 2 faces in 128D space
-    def compare(self, known, unknown):
+    def compare(self, unknown):
         #the commented code is an alternative version for explanatory reasons, gives the same results
         # all = []
         # for x in known:
@@ -235,7 +235,7 @@ class FaceRecognition:
         #         temp = (x[y]-unknown[y])**2 + temp
         #     all.append(math.sqrt(temp))
         # print(all)
-        return np.linalg.norm(known - unknown, axis=1)
+        return np.linalg.norm(self.descriptors - unknown, axis=1)
 
     #reads stream from a camera, runs neccessary image processings and puts every frame to frameQ
     def read_stream(self):
@@ -278,9 +278,8 @@ class FaceRecognition:
                 h = h*4
                 crop = image[y: y+h, x: x+w]
                 #create list of comparisons by comparing the tested faces against every face in the database
-                comparisons = (self.compare(self.descriptors, self.descriptor(frame, landmarks[i]))).tolist()
+                comparisons = (self.compare(self.descriptor(frame, landmarks[i]))).tolist()
                 #do for every comparison in the list comparisons
-
                 if np.amin(comparisons) <= 0.55:
                     label = np.argmin(comparisons)
                 else:
@@ -340,16 +339,30 @@ class FaceRecognition:
                         log.save()
 
 
-    def filter(self):
+    def filter(self, statistic):
         logs = database.Log.objects.all()
         snaps = list(logs.values_list('snapshot', flat=True))
         snaps = list(filter(None, snaps))
+        cluster_descriptors = []
         descriptors = self.known_subjects_descriptors(snaps)
-        labels = dlib.chinese_whispers_clustering(descriptors,0.5)
+        npdescriptors = np.array(descriptors)
+        print("before:", len(descriptors), " ", len(npdescriptors))
+
+        for i in range(0, len(descriptors)):
+            comparisons = list(self.compare(npdescriptors[i]))
+            if np.amin(comparisons) < 0.55:
+                database.Log.objects.filter(snapshot=snaps[i]).delete()
+            else:
+                cluster_descriptors.append(descriptors[i])
+
+        print("after:", len(descriptors), " ", len(npdescriptors), " ", len(cluster_descriptors))
+        labels = dlib.chinese_whispers_clustering(cluster_descriptors, 0.5)
         print(labels)
         num_classes = len(set(labels))
         print("Number of people: ", num_classes)
-        return num_classes
+        statistic.filtered = num_classes
+        statistic.save()
+        return
 
 
 

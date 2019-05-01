@@ -307,14 +307,13 @@ def stopCountAdmin(request):
         statistic = Statistic.objects.create(day=timezone.now(), count=rec_threads.rec.count)
         statistic.save()
         rec_threads.rec.count = 0
-        message = "Counting has been stopped."
+        message = "Counting has been stopped, wait for processing."
         messages.success(request, message)
 
         #filtering
         print("FILTERING")
-        filtered = rec_threads.rec.filter()
-        statistic.filtered = filtered
-        statistic.save()
+        filter_thread = threading.Thread(target=rec_threads.rec.filter, args=(statistic,),name="filter_thread")
+        filter_thread.start()
     else:
         message = "Counting is not running!"
         messages.warning(request, message)
