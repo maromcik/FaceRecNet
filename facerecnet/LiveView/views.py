@@ -138,8 +138,8 @@ def facerecognition():
             break
         #call process and access functions
         process = rec_threads.process_pool.apply_async(rec_threads.rec.process)
-        labels, frame = process.get()
-        access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, frame, arduino_lock))
+        labels, frame, crop = process.get()
+        access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, crop, arduino_lock))
         #if recogntion hasn't been restared display image on server, else don't or it will fail (because of internal
         # OpenCV bug I think)
         if restarted == False:
