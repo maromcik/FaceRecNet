@@ -193,7 +193,7 @@ def startAdmin(request):
     else:
         message = "Face recognition has been started"
         messages.success(request, message)
-    return HttpResponseRedirect("../admin")
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 #starts recognition from the home page
 @login_required(login_url='/accounts/login')
@@ -227,7 +227,7 @@ def stopAdmin(request):
                     # admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
                     messages.success(request, message)
                     stopped = False
-                    return HttpResponseRedirect("../admin")
+                    return HttpResponseRedirect(request.META['HTTP_REFERER'])
                 time.sleep(1)
             else:
                 message = "Face recognition could not be stopped"
@@ -239,7 +239,7 @@ def stopAdmin(request):
         message = "Face recognition is not running!"
         messages.warning(request, message)
     stopped = False
-    return HttpResponseRedirect("../admin")
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 #stops recognition from the home page
 @login_required(login_url='/accounts/login')
@@ -299,7 +299,7 @@ def openAdmin(request):
         arduino_lock.clear()
         print("lock cleared")
         messages.error(request, message)
-    return HttpResponseRedirect("../admin")
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 
 #opens gate from the home page
