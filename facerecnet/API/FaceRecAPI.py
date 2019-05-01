@@ -257,20 +257,28 @@ class FaceRecognition:
     #main function, puts everything needed for facial rec. together
     def process(self):
         labels = []
+        crop = None
         image = self.frameQ.get()
         frame = self.resize_img(image, fx=self.resize_factor, fy=self.resize_factor)
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         faces = self.detect(frame)
         #if there are any faces in the frame
         if faces is not None:
             landmarks = self.find_landmarks(frame, faces)
             #for every faces do following
-            for y in range(0, len(faces)):
+            for i in range(0, len(faces)):
                 #convert coordinate systems
-                rect = self.dlib2opencv(faces[y])
+                rect = self.dlib2opencv(faces[i])
                 #draw a rectangle
                 self.draw(frame, rect)
+                (x,y,w,h) = rect
+                x = x*4
+                y = y*4
+                w = w*4
+                h = h*4
+                crop = image[y: y+h, x: x+w]
                 #create list of comparisons by comparing the tested faces against every face in the database
-                comparisons = (self.compare(self.descriptors, self.descriptor(frame, landmarks[y]))).tolist()
+                comparisons = (self.compare(self.descriptors, self.descriptor(frame, landmarks[i]))).tolist()
                 #do for every comparison in the list comparisons
 
                 if np.amin(comparisons) <= 0.55:
@@ -287,11 +295,10 @@ class FaceRecognition:
 
                 labels.append(label)
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         # self.outputQ.put(frame)
         # cv2.imshow("SmartGate", image)
         # cv2.waitKey(1)
-        return labels, frame, image
+        return labels, frame, crop
 
 
     #manages access and writes logs to database
@@ -306,7 +313,7 @@ class FaceRecognition:
                 if label is None:
                     self.unknown_count += 1
 
-                    if (self.empty_count1 > 13) and self.unknown_count > 8:
+                    if (self.empty_count1 > 8) and self.unknown_count > 8:
                         text = ''.join(secrets.choice(string.ascii_uppercase + string.digits + string.ascii_lowercase) for _ in range(20))
                         fullpath = self.dir+"/media/snapshots/"+text+".jpg"
                         djangopath = "snapshots/"+text+".jpg"
