@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from LiveView.models import Person, Log, Setting, Subscriber
+from LiveView.models import Person, Log, Setting, Subscriber, Statistic
 from django.utils.safestring import mark_safe
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
@@ -14,10 +14,10 @@ import socket
 #redifines admin interface behavour
 class LogAdmin(admin.ModelAdmin):
     #field options
-    list_display = ['person', 'time', 'granted', 'image_tag']
-    list_filter = ['time', 'granted']
+    list_display = ['person', 'time', 'image_tag']
+    list_filter = ['time']
     search_fields = ['person__name']
-    readonly_fields = ['person', 'time', 'granted', 'snapshot']
+    readonly_fields = ['person', 'time', 'snapshot']
 
     #you cannot change logs
     def has_add_permission(self, request, obj=None):
@@ -37,11 +37,19 @@ class LogAdmin(admin.ModelAdmin):
     image_tag.short_description = 'Image'
 
 
+class StatisticAdmin(admin.ModelAdmin):
+    list_display = ['day', 'count', 'filtered']
+    list_filter = ['day']
+    search_fields = ['day']
+    readonly_fields = ['day', 'count', 'filtered']
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
 class PersonAdmin(admin.ModelAdmin):
-    list_filter = ['authorized']
     search_fields = ['name']
-    fields = ['name', 'authorized', 'file']
-    list_display = ['name', 'authorized', 'image_tag']
+    fields = ['name', 'file']
+    list_display = ['name', 'image_tag']
     change_list_template = "LiveView/change_list.html"
 
     #add links to custom buttons
@@ -58,7 +66,7 @@ class PersonAdmin(admin.ModelAdmin):
     def run_encodings(self, request):
         #triggers running encodings of known persons
         views.rec_threads.rec.load_files()
-        views.rec_threads.rec.known_subjects_descriptors()
+        views.rec_threads.rec.known_subjects_descriptors(None)
         views.rec_threads.rec.load_files()
         self.message_user(request, "Encodings done!")
         return HttpResponseRedirect("../")
@@ -94,7 +102,6 @@ class SettingAdmin(admin.ModelAdmin):
         my_urls = [
             path('grab/', self.grab_cap),
             path('load/', self.load_files),
-            path('reconnect/', self.reconnect),
         ]
         return my_urls + urls
 
@@ -123,35 +130,6 @@ class SettingAdmin(admin.ModelAdmin):
             return HttpResponseRedirect("../")
 
 
-    @method_decorator(login_required(login_url='/admin/login'))
-    def reconnect(self, request):
-        #reconnects arduino
-        try:
-            if views.rec_threads.facerecognition_thread.isAlive():
-                views.rec_threads.rec.c.shutdown(2)
-                views.rec_threads.rec.c.close()
-                views.rec_threads.rec.s.shutdown(2)
-                views.rec_threads.rec.s.close()
-                print("connection closed")
-                views.rec_threads.rec.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                views.rec_threads.rec.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                views.rec_threads.rec.s.bind((views.rec_threads.rec.host, views.rec_threads.rec.port1))
-                views.rec_threads.rec.s.listen(1)
-                views.rec_threads.rec.c, addr = views.rec_threads.rec.s.accept()
-                print(addr, " connected")
-                views.rec_threads.startrecognition()
-                self.message_user(request, "Arduino reconnected!")
-                return HttpResponseRedirect("../")
-            else:
-                messages.warning(request, "Face recognition is not running!")
-                return HttpResponseRedirect("../")
-        except (OSError, ConnectionAbortedError, ConnectionResetError, ConnectionError, BrokenPipeError):
-            messages.error(request, "There's a problem with the Arduino, try to restart it!")
-            return HttpResponseRedirect("../")
-        except AttributeError:
-            messages.warning(request, "Face recognition is not running!")
-            return HttpResponseRedirect("../")
-
 #adds subscriber field to authenticated users table
 class SubscriberInline(admin.StackedInline):
     model = Subscriber
@@ -167,6 +145,7 @@ admin.site.register(User, UserAdmin)
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Log, LogAdmin)
 admin.site.register(Setting, SettingAdmin)
+admin.site.register(Statistic, StatisticAdmin)
 admin.site.site_header = "Smart Gate Administration"
 
 

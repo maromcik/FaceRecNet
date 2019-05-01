@@ -6,7 +6,6 @@ from django.contrib.auth.models import User
 class Person(models.Model):
     #fields of the table
     name = models.CharField(max_length=50)
-    authorized = models.BooleanField(default=False)
     file = models.ImageField(upload_to="persons/")
     #display names
     def __str__(self):
@@ -18,10 +17,19 @@ class Person(models.Model):
         verbose_name_plural = "persons"
 
 
+class Statistic(models.Model):
+    day = models.DateField()
+    count = models.IntegerField()
+    filtered = models.IntegerField(null = True, blank=True)
+    def __str__(self):
+        return str(self.day)
+    class Meta:
+        verbose_name_plural = "statistics"
+
+
 class Log(models.Model):
     person = models.ForeignKey(Person, on_delete=models.CASCADE, null=True)
     time = models.DateTimeField('date of attempt to access')
-    granted = models.BooleanField(default=False)
     snapshot = models.ImageField(upload_to="snapshots/", blank=True)
 
     def __str__(self):

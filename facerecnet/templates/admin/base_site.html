@@ -10,7 +10,8 @@
     <a href="{% url 'LiveView:startAdmin' %}">START</a> /
     <a href="{% url 'LiveView:stopAdmin' %}">stop</a> /
     <a href="{% url 'LiveView:stream' %}">Open stream</a> /
-    <a href="{% url 'LiveView:openAdmin' %}">Open gate</a> /
+    <a href="{% url 'LiveView:startCountAdmin' %}">CountON</a> /
+    <a href="{% url 'LiveView:stopCountAdmin' %}">CountOFF</a> /
     {% if site_url %}
         <a href="{{ site_url }}">View site</a> /
     {% endif %}

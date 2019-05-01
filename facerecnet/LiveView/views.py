@@ -6,10 +6,12 @@ import cv2
 import threading
 from queue import Queue
 from multiprocessing.pool import ThreadPool
+import multiprocessing
 from API import FaceRecAPI
 import time
 from django.contrib import messages
-from LiveView.models import Subscriber
+from LiveView.models import Subscriber, Statistic, Log
+from django.utils import timezone
 
 #get models
 working_file = "/home/user/Documents/dlib/models/"
@@ -19,10 +21,6 @@ models = [working_file + "shape_predictor_5_face_landmarks.dat",
 
 #create Queue for stream
 frameQ = Queue(maxsize=5)
-#create lock event
-arduino_lock = threading.Event()
-arduino_lock.clear()
-
 #create all neccessary threads
 class RecognitionThreads:
 
@@ -40,7 +38,6 @@ class RecognitionThreads:
                 self.rec = FaceRecAPI.FaceRecognition(models)
                 self.rec.load_files()
                 self.stream_thread = StreamThread()
-                self.arduino_thread = ArduinoThread()
                 self.process_pool = ThreadPool(processes=1)
                 self.access_pool = ThreadPool(processes=1)
                 self.facerecognition_thread = FaceRecognitionThread()
@@ -48,7 +45,6 @@ class RecognitionThreads:
                 return False
         except AttributeError:
             self.stream_thread = StreamThread()
-            self.arduino_thread = ArduinoThread()
             self.process_pool = ThreadPool(processes=1)
             self.access_pool = ThreadPool(processes=1)
             self.facerecognition_thread = FaceRecognitionThread()
@@ -73,20 +69,6 @@ class FaceRecognitionThread(threading.Thread):
     def stopped(self):
         return self._stop_event.is_set()
 
-
-class ArduinoThread(threading.Thread):
-    def __init__(self):
-        super(ArduinoThread, self).__init__(target=rec_threads.rec.arduino_server, args=(arduino_lock,), name="ArduinoThread")
-        self._stop_event = threading.Event()
-
-    def destop(self):
-        self._stop_event.clear()
-
-    def stop(self):
-        self._stop_event.set()
-
-    def stopped(self):
-        return self._stop_event.is_set()
 
 
 class StreamThread(threading.Thread):
@@ -115,22 +97,17 @@ def facerecognition():
         rec_threads.rec.grab_cap()
 
     rec_threads.stream_thread.start()
-    rec_threads.arduino_thread.start()
     print("Face Recognition is running")
     while True:
         #check if recognition has been stopped
         if rec_threads.facerecognition_thread.stopped():
-            rec_threads.arduino_thread.stop()
             rec_threads.stream_thread.stop()
             rec_threads.process_pool.terminate()
             rec_threads.access_pool.terminate()
             frameQ.task_done()
-            rec_threads.arduino_thread.join()
             rec_threads.stream_thread.join()
             rec_threads.process_pool.join()
             rec_threads.access_pool.join()
-            rec_threads.rec.arduino_server_pool.terminate()
-            rec_threads.rec.arduino_server_pool.join()
             global restarted
             restarted = True
             global stopped
@@ -138,8 +115,8 @@ def facerecognition():
             break
         #call process and access functions
         process = rec_threads.process_pool.apply_async(rec_threads.rec.process)
-        labels, frame = process.get()
-        access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, frame, arduino_lock))
+        labels, frame, image = process.get()
+        access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, image))
         #if recogntion hasn't been restared display image on server, else don't or it will fail (because of internal
         # OpenCV bug I think)
         if restarted == False:
@@ -149,7 +126,7 @@ def facerecognition():
             continue
         frameQ.put(frame)
 
-    rec_threads.arduino_thread.destop()
+
     rec_threads.stream_thread.destop()
     rec_threads.facerecognition_thread.destop()
     rec_threads.rec.cap.release()
@@ -193,7 +170,7 @@ def startAdmin(request):
     else:
         message = "Face recognition has been started"
         messages.success(request, message)
-    return HttpResponseRedirect("../admin")
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 #starts recognition from the home page
 @login_required(login_url='/accounts/login')
@@ -227,7 +204,7 @@ def stopAdmin(request):
                     # admin.ModelAdmin.message_user(admin.ModelAdmin, request, message)
                     messages.success(request, message)
                     stopped = False
-                    return HttpResponseRedirect("../admin")
+                    return HttpResponseRedirect(request.META['HTTP_REFERER'])
                 time.sleep(1)
             else:
                 message = "Face recognition could not be stopped"
@@ -239,7 +216,7 @@ def stopAdmin(request):
         message = "Face recognition is not running!"
         messages.warning(request, message)
     stopped = False
-    return HttpResponseRedirect("../admin")
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 #stops recognition from the home page
 @login_required(login_url='/accounts/login')
@@ -276,62 +253,69 @@ def stop(request):
     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
 
 
-#opens gate from the admin interface
-@login_required(login_url='/accounts/login')
-def openAdmin(request):
-    try:
-        if rec_threads.facerecognition_thread.isAlive():
-            rec_threads.rec.arduino_open("manual", arduino_lock)
-            message = "Gate opened!"
-            messages.success(request, message)
-        else:
-            message = "Face recognition is not running!"
-            messages.warning(request, message)
-            arduino_lock.clear()
-            print("lock cleared")
-    except AttributeError:
-        message = "Face recognition is not running!"
-        arduino_lock.clear()
-        print("lock cleared")
+# def startCount(request):
+#     user = request.user
+#
+#     if rec_threads.rec.countStarted:
+#         message = "Counting has been already started."
+#         status = 1
+#     else:
+#         rec_threads.rec.countStarted = True
+#         message = "Counting has been started!"
+#         status = 0
+#
+#     counting = rec_threads.rec.countStarted
+#
+#     subscription = Subscriber.objects.get(user=user).subscription
+#     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'counting': counting, 'subscription': subscription, 'status': status}))
+#
+#
+# def stopCount(request):
+#     user = request.user
+#
+#     if rec_threads.rec.countStarted:
+#         rec_threads.rec.countStarted = False
+#         statistic = Statistic.objects.create(day=timezone.now(), count=rec_threads.rec.count)
+#         statistic.save()
+#         rec_threads.rec.count = 0
+#         message = "Counting has been stopped."
+#         status = 0
+#     else:
+#         message = "Counting is not running!"
+#         status = 1
+#
+#     counting = rec_threads.rec.countStarted
+#
+#     subscription = Subscriber.objects.get(user=user).subscription
+#     return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'counting': counting, 'subscription': subscription, 'status': status}))
+
+
+def startCountAdmin(request):
+    if rec_threads.rec.countStarted:
+        message = "Counting has been already started."
         messages.warning(request, message)
-    except OSError:
-        message = "There's a problem with the Arduino, try to restart it!"
-        arduino_lock.clear()
-        print("lock cleared")
-        messages.error(request, message)
-    return HttpResponseRedirect("../admin")
+    else:
+        rec_threads.rec.countStarted = True
+        message = "Counting has been started!"
+        messages.success(request, message)
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 
-#opens gate from the home page
-@login_required(login_url='/accounts/login')
-def open(request):
-    user = request.user
-    try:
-        if rec_threads.facerecognition_thread.isAlive():
-            rec_threads.rec.arduino_open("manual", arduino_lock)
-            message = "Gate opened!"
-            status = 0
-        else:
-            message = "Face recognition is not running!"
-            status = 1
-            arduino_lock.clear()
-            print("lock cleared")
-    except AttributeError:
-        message = "Face recognition is not running!"
-        status = 1
-        arduino_lock.clear()
-        print("lock cleared")
-    except OSError:
-        message = "There's a problem with the Arduino, try to restart it!"
-        status = 2
-        arduino_lock.clear()
-        print("error, lock cleared")
-    try:
-        running = rec_threads.facerecognition_thread.isAlive()
-    except AttributeError:
-        running = False
-    subscription = Subscriber.objects.get(user=user).subscription
-    return HttpResponse(render(request, 'LiveView/LiveView.html', {'message': message, 'running': running, 'subscription': subscription, 'status': status}))
+def stopCountAdmin(request):
+    if rec_threads.rec.countStarted:
+        rec_threads.rec.countStarted = False
+        statistic = Statistic.objects.create(day=timezone.now(), count=rec_threads.rec.count)
+        statistic.save()
+        rec_threads.rec.count = 0
+        message = "Counting has been stopped."
+        messages.success(request, message)
 
-
-
+        #filtering
+        print("FILTERING")
+        filtered = rec_threads.rec.filter()
+        statistic.filtered = filtered
+        statistic.save()
+    else:
+        message = "Counting is not running!"
+        messages.warning(request, message)
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])

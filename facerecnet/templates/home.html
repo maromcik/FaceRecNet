@@ -23,7 +23,6 @@
                 <a href="{% url 'LiveView:start' %}" class="btn btn-success" role="button"><span class="material-icons" title="Start face recognition">power_settings_new</span></a>
             {%endif%}
             <a href="{% url 'LiveView:stream' %}" class="btn btn-primary"> <span class="material-icons" title="Open video stream">ondemand_video</span></a>
-            <a href="{% url 'LiveView:open' %}" class="btn btn-warning"> <span class="material-icons" title="Open gate">lock_open</span></a>
             {% if subscription %}
                 <a href="{% url 'unsubscribe' %}" class="btn btn-info"> <span class="material-icons" title="Unsubscribe from ring notifications">notifications</span></a>
             {% else %}
