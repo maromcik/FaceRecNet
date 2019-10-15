@@ -9,7 +9,9 @@ from django.urls import path
 from LiveView import views
 from django.http import HttpResponseRedirect
 from django.contrib import messages
+from webpush.models import PushInformation, SubscriptionInfo
 import socket
+
 
 #redifines admin interface behavour
 class LogAdmin(admin.ModelAdmin):
@@ -167,6 +169,7 @@ admin.site.register(User, UserAdmin)
 admin.site.register(Person, PersonAdmin)
 admin.site.register(Log, LogAdmin)
 admin.site.register(Setting, SettingAdmin)
+# admin.site.register(SubscriptionInfo)
 admin.site.site_header = "Smart Gate Administration"
 
 
