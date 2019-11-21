@@ -142,7 +142,8 @@ def facerecognition():
         access = rec_threads.access_pool.apply_async(rec_threads.rec.access, args=(labels, crop, arduino_lock))
         #if recogntion hasn't been restared display image on server, else don't or it will fail (because of internal
         # OpenCV bug I think)
-        if restarted == False:
+        global restarted
+        if not restarted:
             cv2.imshow("FaceRecognition", frame)
             cv2.waitKey(1)
         if frameQ.full():
