@@ -36,8 +36,8 @@ class Setting(models.Model):
     #predetermined choices
     stream1 = "rtsp://admin:M14ercedes1@192.168.1.64:554>/Streaming/Channels/101/?tcp"
     stream2 = "rtsp://192.168.1.62/user=admin&password=&channel=1&stream=0.sdp?real_stream"
-    stream3 = "http://192.168.1.130:8080/video"
-    stream4 = "http://192.168.1.163:8080/video"
+    stream3 = "http://192.168.1.65:8080/video"
+    stream4 = "http://192.168.1.66:8080/video"
     DEVICE_CHOICES = (
         (stream1, 'Hikvision camera'),
         (stream2, 'Gate camera'),
